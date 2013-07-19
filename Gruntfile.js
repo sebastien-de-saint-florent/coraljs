@@ -16,7 +16,7 @@
         },
         uglify: {
             options: {
-                banner: '/*! coraljs 0.1-alpha - license MIT - http://coraljs.com */\n'
+                banner: '/*! coraljs 0.1 "Early Preview" - license MIT - http://coraljs.com */\n'
             },
             build: {
                 src: 'build/coral.js',
