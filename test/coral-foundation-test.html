@@ -1,0 +1,1401 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+<script type="text/javascript" src="../build/coral.js"></script>
+<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.12.0.css">
+</head>
+<body>
+	<div id="test-zone" style="display:none;">
+	</div>
+	<div id="qunit"></div>
+	<div id="qunit-fixture"></div>
+
+	<script type="text/javascript" src="http://code.jquery.com/qunit/qunit-1.12.0.js"></script>
+	<script type="text/javascript">
+	function dieTest(func) {
+		var catched = false;
+		try {
+			func();
+		}
+		catch (e) {
+			catched = true;
+		}
+		ok(catched);
+	};
+	
+	/****** Datas ******/
+	var model;
+	
+	/****** General ******/
+	test("Coral - initialisation", function() {
+		ok(Coral);
+	});
+
+	/****** Utils ******/
+	
+	test("Utils - getUID", function() {
+		var uid1 = Coral.Utils.getUID();
+		var uid2 = Coral.Utils.getUID();
+		ok(uid1 != uid2);
+	});
+	
+	test("Utils - getChain", function() {
+		var object = {
+			a: {
+				b: {
+					func: function() {
+						return {
+							c: 42,
+						}
+					}
+				}
+			}
+		}
+		ok(Coral.Utils.getChain(object, "a.b.func().c") == 42);
+	});
+	
+	test("Utils - prototypalMerge", function() {
+		var p1 = {val: 1};
+		var p2 = Object.create(p1);
+		p2.val = [2,3];
+		var p3 = Object.create(p2);
+		var result = Coral.Utils.prototypalMerge(p3, "val");
+		ok(result instanceof Array);
+		ok(result.length == 3);
+		ok(result[0] == 2);
+		ok(result[1] == 3);
+		ok(result[2] == 1);
+	});
+	
+	asyncTest("Utils - wait", function () {
+	    var context = {};
+	    var flag = false;
+	    expect(2);
+	    Coral.Utils.wait(300, function () {
+	        ok(this === context);
+	        ok(flag === true);
+	        start();
+	    }, context);
+	    flag = true;
+	});
+	
+	asyncTest("Utils - callback", function () {
+	    var context = {};
+	    var flag = false;
+	    expect(2);
+	    Coral.Utils.callback(function () {
+	        ok(this === context);
+	        ok(flag === true);
+	        start();
+	    }, context);
+	    flag = true;
+	});
+	
+	/****** Meta ******/
+	/*** Extends ***/
+		
+	test("Meta - Extends", function() {
+		function Class1() {
+		};
+		function Class2(){
+		};
+		Meta.Extends(Class1, Class2);
+		var instance = new Class1();
+		ok(instance instanceof Class1);
+		ok(instance instanceof Class2);
+	});
+	
+	/*** Bindable ***/
+	
+	function MetaBindableSetup() {
+		model = {
+			object: {
+				attribute: "test",
+				value: 0,
+				nested: {attribute: 0},
+				method: function() {
+					return this.attribute;
+				},
+			},
+		};
+	}
+	
+	test("Meta - Bindable - base", function() {
+		ok(Meta.Bindable instanceof Function);
+		ok(Meta.Bindable.isBindable instanceof Function);
+		ok(Meta.Bindable.hasDependencies instanceof Function);
+		ok(Meta.Bindable.getDependencies instanceof Function);
+		ok(Meta.Bindable.bind instanceof Function);
+		ok(Meta.Bindable.unbind instanceof Function);
+		ok(Meta.Bindable.trigger instanceof Function);
+		ok(Meta.Bindable.triggerAll instanceof Function);
+		ok(Meta.Bindable.autoBindableEnable === true);
+		ok(Meta.Bindable.PropertyListenerMixin);
+	});
+	
+	test("Meta - Bindable - apply", function() {
+		MetaBindableSetup();
+		Meta.Bindable(model.object, "attribute");
+		ok(true);
+	});
+	
+	test("Meta - Bindable - apply with dependencies", function() {
+		MetaBindableSetup();
+		Meta.Bindable(model.object, "method", ["attribute", "nested.attribute"]);
+		ok(true);
+	});
+	
+	test("Meta - Bindable - die apply missing params", function() {
+		MetaBindableSetup();
+		dieTest(function() {
+			Meta.Bindable();
+		});
+	});
+	
+	test("Meta - Bindable - isBindable", function() {
+		MetaBindableSetup();
+		Meta.Bindable(model.object, "attribute");
+		Meta.Bindable(model.object, "method", ["attribute", "nested.attribute"]);
+		ok(Meta.Bindable.isBindable(model.object, "attribute"));
+		ok(Meta.Bindable.isBindable(model.object, "method"));
+	});
+	
+	test("Meta - Bindable - hasDependencies", function() {
+		MetaBindableSetup();
+		Meta.Bindable(model.object, "method", ["attribute", "nested.attribute"]);
+		ok(Meta.Bindable.hasDependencies(model.object, "method"));
+	});
+	
+	test("Meta - Bindable - getDependencies", function() {
+		MetaBindableSetup();
+		Meta.Bindable(model.object, "method", ["attribute", "nested.attribute"]);
+		var dependencies = Meta.Bindable.getDependencies(model.object, "method");
+		ok(dependencies instanceof Array);
+		ok(dependencies.length == 2);
+	});
+
+	test("Meta - Bindable - bind unbind", function() {
+		MetaBindableSetup();
+		var handler = {handleChange: function(){}};
+		Meta.Mixin(handler, Meta.Bindable.PropertyListenerMixin);
+		var propertyListener = Meta.Bindable.bind(model.object, "attribute", handler, 1);
+		ok(Meta.Bindable.isBindable(model.object, "attribute"));
+		Meta.Bindable.unbind(model.object, "attribute", propertyListener);
+		ok(true);
+	});
+	
+	test("Meta - Bindable - cannot bindable", function() {
+		Meta.Bindable(window, "document");
+		ok(true);
+	});
+	
+	test("Meta - Bindable - trigger", function() {
+		MetaBindableSetup();
+		var passed = false;
+		var handler = {handleChange: function(newValue, oldValue, params){
+			passed = oldValue === "test" && newValue == model.object.attribute && params === 1;
+		}};
+		Meta.Mixin(handler, Meta.Bindable.PropertyListenerMixin);
+		Meta.Bindable.bind(model.object, "attribute", handler, 1);
+		model.object.attribute = "triggered";
+		ok(passed);
+	});
+	
+	test("Meta - Bindable - unbind and trigger", function() {
+		MetaBindableSetup();
+		var passed = true;
+		var handler = {handleChange: function(newValue, oldValue, params){
+			passed = false;
+		}};
+		Meta.Mixin(handler, Meta.Bindable.PropertyListenerMixin);
+		var propertyListener = Meta.Bindable.bind(model.object, "attribute", handler, 1);
+		Meta.Bindable.unbind(model.object, "attribute", propertyListener);
+		model.object.attribute = "triggered";
+		ok(passed);
+	});
+	
+	test("Meta - Bindable - triggerAll", function() {
+		MetaBindableSetup();
+		var passed1 = false;
+		var passed2 = false;
+		var handler1 = {handleChange: function(newValue, oldValue, params){
+			passed1 = oldValue == undefined && newValue == model.object.attribute && params == 1;
+		}};
+		Meta.Mixin(handler1, Meta.Bindable.PropertyListenerMixin);
+		var handler2 = {handleChange: function(newValue, oldValue, params){
+			passed2 = oldValue == undefined && newValue == model.object.value && params == 2;
+		}};
+		Meta.Mixin(handler2, Meta.Bindable.PropertyListenerMixin);
+		Meta.Bindable.bind(model.object, "attribute", handler1, 1);
+		Meta.Bindable.bind(model.object, "value", handler2, 2);
+		Meta.Bindable.triggerAll(model.object);
+		ok(passed1 && passed2);
+	});
+	
+	test("Meta - Bindable - triggerAll with keys", function() {
+		MetaBindableSetup();
+		var passed1 = true;
+		var passed2 = false;
+		var handler1 = {handleChange: function(newValue, oldValue, params){
+			passed1 = false;
+		}};
+		Meta.Mixin(handler1, Meta.Bindable.PropertyListenerMixin);
+		var handler2 = {handleChange: function(newValue, oldValue, params){
+			passed2 = oldValue == undefined && newValue == model.object.value && params == 2;
+		}};
+		Meta.Mixin(handler2, Meta.Bindable.PropertyListenerMixin);
+		Meta.Bindable.bind(model.object, "attribute", handler1, 1);
+		Meta.Bindable.bind(model.object, "value", handler2, 2);
+		Meta.Bindable.triggerAll(model.object, ["value"]);
+		ok(passed1 && passed2);
+	});
+	
+	test("Meta - Bindable - trigger running modification", function() {
+		MetaBindableSetup();
+		var passed1 = false;
+		var passed2 = false;
+		var passed3 = true;
+		var handler1 = {handleChange: function(newValue, oldValue, params){
+			passed1 = true;
+		}};
+		Meta.Mixin(handler1, Meta.Bindable.PropertyListenerMixin);
+		var handler2 = {handleChange: function(newValue, oldValue, params){
+			passed2 = true;
+			Meta.Bindable.unbind(model.object, "attribute", propertyListener1);
+			Meta.Bindable.bind(model.object, "attribute", handler3, 3);
+		}};
+		Meta.Mixin(handler2, Meta.Bindable.PropertyListenerMixin);
+		var handler3 = {handleChange: function(newValue, oldValue, params){
+			passed3 = false;
+		}};
+		Meta.Mixin(handler3, Meta.Bindable.PropertyListenerMixin);
+		var propertyListener1 = Meta.Bindable.bind(model.object, "attribute", handler1, 1);
+		Meta.Bindable.bind(model.object, "attribute", handler2, 2);
+		model.object.attribute = "triggered";
+		ok(passed1 && passed2 && passed3);
+	});
+	
+	test("Meta - Bindable - die trigger loop", function() {
+		MetaBindableSetup();
+		dieTest(function() {
+			var handler = {handleChange: function(newValue, oldValue, params){
+				model.object.attribute = "loop";
+			}};
+			Meta.Mixin(handler, Meta.Bindable.PropertyListenerMixin);
+			var propertyListener = Meta.Bindable.bind(model.object, "attribute", handler, 1);
+			model.object.attribute = "triggered";
+		});
+	});
+
+	/****** Watcher ******/
+	
+	function WatcherSetup() {
+		model = {
+			val: 1,
+			method: function() {
+				return this.nested;
+			},
+			nested: {
+				attribute: 2,
+			},
+			compute: function() {
+				return this.val + this.method().attribute;
+			}
+		};
+	}
+	
+	test("Watcher - base", function() {
+		ok(Coral.Watcher instanceof Function);
+	    ok(Meta.Mixin.is(Coral.Watcher.prototype, Meta.Bindable.PropertyListenerMixin));
+	});
+	
+	test("Watcher - basic", function() {
+		WatcherSetup();
+		var passed = false;
+		var watcher = new Coral.Watcher(model, "val", function(newValue, oldValue, params) {
+			passed = oldValue == 1 && newValue == model.val && params == 1;
+		}, this, 1).bind();
+		model.val = 2;
+		ok(passed);
+	});
+	
+	test("Watcher - bind with trigger", function() {
+		WatcherSetup();
+		var passed = false;
+		var watcher = new Coral.Watcher(model, "val", function(newValue, oldValue, params) {
+			passed = oldValue == undefined && newValue == model.val && params == 1;
+		}, this, 1).bind(true);
+		ok(passed);
+	});
+	
+	test("Watcher - unbind", function() {
+		WatcherSetup();
+		var passed = true;
+		var watcher = new Coral.Watcher(model, "val", function(newValue, oldValue, params) {
+			passed = false;
+		}, this, 1).bind();
+		watcher.unbind();
+		model.val = 2;
+		ok(passed);
+	});
+	
+	test("Watcher - chain", function() {
+		WatcherSetup();
+		var passed = 0;
+		var watcher = new Coral.Watcher(model, "nested.attribute", function(newValue, oldValue, params) {
+			++passed;
+		}, this).bind();
+		model.nested.attribute = 1;
+		model.nested = {attribute: 2};
+		model.nested = {attribute: 2};
+		ok(passed == 2);
+	});
+	
+	test("Watcher - chain with functions", function() {
+		WatcherSetup();
+		var passed = false;
+		var watcher = new Coral.Watcher(model, "method().attribute", function(newValue, oldValue, params) {
+			passed = newValue == model.method().attribute;
+		}, this).bind();
+		model.nested.attribute = 1;
+		ok(passed);
+	});
+	
+	test("Watcher - chain with dependencies", function() {
+		WatcherSetup();
+		var passed = false;
+		Meta.Bindable(model, "method", ["nested"]);
+		var watcher = new Coral.Watcher(model, "method().attribute", function(newValue, oldValue, params) {
+			passed = newValue == model.method().attribute;
+		}, this).bind();
+		model.nested = {attribute:1};
+		ok(passed);
+	});
+	
+	test("Watcher - complexe", function() {
+		WatcherSetup();
+		var passed = false;
+		Meta.Bindable(model, "method", ["nested"]);
+		Meta.Bindable(model, "compute", ["val", "method().attribute"]);
+		var watcher = new Coral.Watcher(model, "compute()", function(newValue, oldValue, params) {
+			passed = newValue == 2;
+		}, this).bind();
+		model.nested = {attribute:1};
+		ok(passed);
+	});
+	
+	test("Watcher - running modifications", function() {
+		WatcherSetup();
+		var passed1 = false;
+		var passed2 = false;
+		var passed3 = true;
+		var watcher1 = new Coral.Watcher(model, "val", function(newValue, oldValue, params) {
+			passed1 = true;
+		}, this).bind();
+		var watcher2 = new Coral.Watcher(model, "val", function(newValue, oldValue, params) {
+			passed2 = true;
+			watcher1.unbind();
+			watcher3.bind();
+		}, this).bind();
+		var watcher3 = new Coral.Watcher(model, "val", function(newValue, oldValue, params) {
+			passed3 = false;
+		}, this);
+		model.val = 2;
+		ok(passed1 && passed2 && passed3);
+	});
+	
+	test("Watcher - die loop", function() {
+		WatcherSetup();
+		dieTest(function() {
+			var watcher = new Coral.Watcher(model, "val", function(newValue, oldValue, params) {
+				model.val = 1;
+			}, this).bind();
+			model.val = 2;
+		});
+	});
+
+	/****** Binding ******/
+	
+	test("Binding - base", function() {
+		ok(Coral.Binding instanceof Function);
+	    ok(Meta.Mixin.is(Coral.Binding.prototype, Meta.Bindable.PropertyListenerMixin));
+	});
+	
+	test("Binding - basic", function() {
+		WatcherSetup();
+		var target = {};
+		var binding = new Coral.Binding(model, "val", target, "val").bind();
+		ok(target.val === model.val);
+		model.val = 2;
+		ok(target.val === model.val);
+	});
+	
+	test("Binding - chain", function() {
+		WatcherSetup();
+		var target = {};
+		var binding = new Coral.Binding(model, "nested.attribute", target, "val").bind();
+		ok(target.val === model.nested.attribute);
+		model.nested.attribute = 1;
+		ok(target.val === model.nested.attribute);
+		model.nested = {attribute: 3};
+		ok(target.val === model.nested.attribute);
+		model.nested = undefined;
+		ok(target.val === undefined);
+	});
+	
+	test("Binding - complexe", function() {
+		WatcherSetup();
+		var target = {};
+		Meta.Bindable(model, "method", ["nested"]);
+		Meta.Bindable(model, "compute", ["val", "method().attribute"]);
+		var binding = new Coral.Binding(model, "compute()", target, "val").bind();
+		ok(target.val === 3);
+		model.nested = {attribute:1};
+		ok(target.val === 2);
+	});
+
+	/****** EventWatcher ******/
+	
+	function EventWatcherSetup() {
+		model = {
+			nested: {
+				dispatcher: new Coral.EventDispatcher()
+			},
+			method: function() {
+				return {result:this.nested};
+			}
+		}
+	};
+	
+	test("EventWatcher - base", function() {
+		ok(Coral.EventWatcher instanceof Function);
+	});
+	
+	test("EventWatcher - basic", function() {
+		EventWatcherSetup();
+		var passed = false;
+		var eventWatcher = new Coral.EventWatcher(model.nested, "dispatcher", "fire", function(event, params) {
+			passed = event.type == "fire" && params == 1;
+		}, this, 1).bind();
+		model.nested.dispatcher.dispatch(new Coral.Event("fire"));
+		ok(passed);
+	});
+	
+	test("EventWatcher - chain", function() {
+		EventWatcherSetup();
+		var passed = false;
+		var eventWatcher = new Coral.EventWatcher(model, "nested.dispatcher", "fire", function(event, params) {
+			passed = true;
+		}, this).bind();
+		model.nested.dispatcher.dispatch(new Coral.Event("fire"));
+		ok(passed);
+	});
+	
+	test("EventWatcher - only event", function() {
+		EventWatcherSetup();
+		var passed = false;
+		var eventWatcher = new Coral.EventWatcher(model.nested.dispatcher, undefined, "fire", function(event, params) {
+			passed = true;
+		}, this).bind();
+		model.nested.dispatcher.dispatch(new Coral.Event("fire"));
+		ok(passed);
+	});
+	
+	test("EventWatcher - complexe", function() {
+		EventWatcherSetup();
+		Meta.Bindable(model, "method", ["nested"]);
+		var passed = false;
+		var eventWatcher = new Coral.EventWatcher(model, "method().result.dispatcher", "fire", function(event, params) {
+			passed = true;
+		}, this).bind();
+		model.nested.dispatcher.dispatch(new Coral.Event("fire"));
+		ok(passed);
+		passed = false;
+		model.nested = {
+			dispatcher: new Coral.EventDispatcher()
+		};
+		model.nested.dispatcher.dispatch(new Coral.Event("fire"));
+		ok(passed);
+	});
+
+
+	/****** CompositeBinding ******/
+	
+	test("CompositeBinding - base", function() {
+		ok(Coral.CompositeBinding instanceof Function);
+	});
+	
+	test("CompositeBinding - basic", function() {
+		WatcherSetup();
+		var target = {};
+		var binding = new Coral.CompositeBinding(model, new Coral.BindingComposition("{val}"), target, "val").bind();
+		ok(target.val == "1");
+		model.val = 2;
+		ok(target.val == "2");
+	});
+	
+	test("CompositeBinding - only text", function() {
+		WatcherSetup();
+		var target = {};
+		var binding = new Coral.CompositeBinding(model, new Coral.BindingComposition("val"), target, "val").bind();
+		ok(target.val == "val");
+		model.val = 2;
+		ok(target.val == "val");
+	});
+	
+	test("CompositeBinding - only bindings", function() {
+		WatcherSetup();
+		var target = {};
+		var binding = new Coral.CompositeBinding(model, new Coral.BindingComposition("{val}{nested.attribute}"), target, "val").bind();
+		ok(target.val == "12");
+		model.val = 2;
+		ok(target.val == "22");
+		model.nested = {attribute:1};
+		ok(target.val == "21");
+	});
+	
+	test("CompositeBinding - complexe", function() {
+		WatcherSetup();
+		var target = {};
+		Meta.Bindable(model, "method", ["nested"]);
+		Meta.Bindable(model, "compute", ["val", "method().attribute"]);
+		var binding = new Coral.CompositeBinding(model, new Coral.BindingComposition("compute : {val} + {method().attribute} = {compute()}"), target, "val").bind();
+		ok(target.val == "compute : 1 + 2 = 3");
+		model.nested = {attribute:1};
+		ok(target.val == "compute : 1 + 1 = 2");
+	});
+
+	/****** UIBinding ******/
+	
+	function UIBindingSetup() {
+		$("#test-zone").html("<div id='test'></div>");
+		model = {
+			cls: false,
+			width: "1px",
+			trs: "scale(2)",
+			text: "test",
+			html: "<div id='innerdiv'></div>",
+			state: "open",
+		}
+	};
+	
+	/*** AttributeBinding ***/
+	
+	test("UIBinding - AttributeBinding - base", function() {
+		ok(Coral.AttributeBinding instanceof Function);
+	});
+	
+	test("UIBinding - AttributeBinding - basic", function() {
+		UIBindingSetup();
+		var uibinding = new Coral.AttributeBinding(model, "width", $("#test"), "width").bind();
+		ok($("#test").attr("width") == model.width);
+		model.width = "2px";
+		ok($("#test").attr("width") == model.width);
+	});
+	
+	/*** StyleBindingBinding ***/
+	
+	test("UIBinding - StyleBinding - base", function() {
+		ok(Coral.StyleBinding instanceof Function);
+	});
+	
+	test("UIBinding - StyleBinding - basic", function() {
+		UIBindingSetup();
+		var uibinding = new Coral.StyleBinding(model, "width", $("#test"), "width").bind();
+		ok($("#test").css("width") == model.width);
+		model.width = "2px";
+		ok($("#test").css("width") == model.width);
+	});
+
+	/*** ContentBinding ***/
+	
+	test("UIBinding - ContentBinding - base", function() {
+		ok(Coral.ContentBinding instanceof Function);
+	});
+	
+	test("UIBinding - ContentBinding - text", function() {
+		UIBindingSetup();
+		var uibinding = new Coral.ContentBinding(model, "text", $("#test"), false).bind();
+		ok($("#test").text() == model.text);
+		model.text = "changed";
+		ok($("#test").text() == model.text);
+	});
+	
+	test("UIBinding - ContentBinding - html", function() {
+		UIBindingSetup();
+		var uibinding = new Coral.ContentBinding(model, "html", $("#test"), true).bind();
+		ok($("#test > *").length == 1);
+		model.html = "<span/><span/>";
+		ok($("#test > *").length == 2);
+	});
+	
+	/*** ClassSwitchBinding ***/
+	
+	test("UIBinding - ClassSwitchBinding - base", function() {
+		ok(Coral.ClassSwitchBinding instanceof Function);
+	});
+	
+	test("UIBinding - ClassSwitchBinding - basic", function() {
+		UIBindingSetup();
+		var uibinding = new Coral.ClassSwitchBinding(model, "cls", $("#test"), "testClass").bind();
+		ok(!$("#test").hasClass("testClass"));
+		model.cls = true;
+		ok($("#test").hasClass("testClass"));
+	});
+	
+	/*** ClassBinding ***/
+	
+	test("UIBinding - ClassBinding - base", function() {
+		ok(Coral.ClassBinding instanceof Function);
+	});
+	
+	test("UIBinding - ClassBinding - basic", function() {
+		UIBindingSetup();
+		var uibinding = new Coral.ClassBinding(model, "state", $("#test")).bind();
+		ok($("#test").hasClass("open"));
+		model.state = "close";
+		ok(!$("#test").hasClass("open") && $("#test").hasClass("close"));
+		model.state = undefined;
+		ok(!$("#test").hasClass("open") && !$("#test").hasClass("close"));
+	});
+
+	/****** EventDispatcher ******/
+	
+	function EventDispatcherSetup() {
+		var parent = new Coral.EventDispatcher();
+		model = {
+			parent: parent,
+			child: new Coral.EventDispatcher(parent),
+			type: "fire"
+		};
+	};
+	
+	test("EventDispatcher - base", function() {
+		ok(Coral.EventDispatcher instanceof Function);
+		ok(Coral.Event instanceof Function);
+	});
+
+	test("EventDispatcher - basic", function() {
+		EventDispatcherSetup();
+		var passed = false;
+		model.child.on(model.type, function(event, params) {
+			passed = event.type == model.type && params == 1;
+		}, this, 1);
+		model.child.dispatch(new Coral.Event(model.type));
+		ok(passed);
+	});
+	
+	test("EventDispatcher - bubbles", function() {
+		EventDispatcherSetup();
+		var passed1 = false;
+		var passed2 = false;
+		model.child.on(model.type, function(event, params) {
+			passed1 = true;
+		}, this);
+		model.parent.on(model.type, function(event, params) {
+			passed2 = true;
+		}, this);
+		model.child.dispatch(new Coral.Event(model.type, undefined, true));
+		ok(passed1 && passed2);
+	});
+	
+	test("EventDispatcher - stop propagation", function() {
+		EventDispatcherSetup();
+		var passed1 = false;
+		var passed2 = false;
+		var passed3 = true;
+		model.child.on(model.type, function(event, params) {
+			passed1 = true;
+			event.stopPropagation();
+			ok(event.isPropagationStopped());
+			ok(!event.isImmediatePropagationStopped());
+		}, this);
+		model.child.on(model.type, function(event, params) {
+			passed2 = true;
+		}, this);
+		model.parent.on(model.type, function(event, params) {
+			passed3 = false;
+		}, this);
+		model.child.dispatch(new Coral.Event(model.type, undefined, true));
+		ok(passed1 && passed2 && passed3);
+	});
+	
+	test("EventDispatcher - stop immediate propagation", function() {
+		EventDispatcherSetup();
+		var passed1 = false;
+		var passed2 = true;
+		var passed3 = true;
+		model.child.on(model.type, function(event, params) {
+			passed1 = true;
+			event.stopImmediatePropagation();
+			ok(event.isPropagationStopped());
+			ok(event.isImmediatePropagationStopped());
+		}, this);
+		model.child.on(model.type, function(event, params) {
+			passed2 = false;
+		}, this);
+		model.parent.on(model.type, function(event, params) {
+			passed3 = false;
+		}, this);
+		model.child.dispatch(new Coral.Event(model.type, undefined, true));
+		ok(passed1 && passed2 && passed3);
+	});
+	
+	/****** Collection ******/
+	
+	function CollectionSetup() {
+		model = {
+			collection: new Coral.Collection([0,1,2])
+		};
+	};
+	
+	test("Collection - base", function() {
+		ok(Coral.Collection instanceof Function);
+		var collection = new Coral.Collection();
+		ok(collection);
+		ok(collection instanceof Coral.Collection);
+		ok(collection instanceof Coral.EventDispatcher);
+	});
+
+	test("Collection - get", function() {
+		CollectionSetup();
+		ok(model.collection.get(0) === 0);
+		ok(model.collection.get(1) === 1);
+		ok(model.collection.get(2) === 2);
+		ok(model.collection.get(3) === undefined);
+	});
+
+	test("Collection - set", function() {
+		CollectionSetup();
+		var passed = false;
+		model.collection.on(Coral.Collection.SET_EVENT, function(event) {
+			passed = event.type === Coral.Collection.SET_EVENT;
+		});
+		model.collection.set("test", 0);
+		ok(model.collection.get(0) === "test");
+		ok(passed);
+		model.collection.set("test", 5);
+		ok(model.collection.get(5) === "test");
+		ok(model.collection.length === 6);
+	});
+	
+	test("Collection - add", function() {
+		CollectionSetup();
+		var passed = false;
+		model.collection.on(Coral.Collection.ADD_EVENT, function(event) {
+			passed = event.type === Coral.Collection.ADD_EVENT;
+		});
+		model.collection.add(3);
+		ok(passed);
+		ok(model.collection.length == 4);
+		ok(model.collection.get(3) === 3);
+	});
+	
+	test("Collection - add with unique", function() {
+		CollectionSetup();
+		var passed = false;
+		model.collection.on(Coral.Collection.ADD_EVENT, function(event) {
+			passed = true;
+		});
+		model.collection.add(3, true);
+		ok(passed);
+		ok(model.collection.length == 4);
+		ok(model.collection.get(3) === 3);
+		passed = false;
+		model.collection.add(3, true);
+		ok(!passed);
+		ok(model.collection.length == 4);
+	});
+
+	test("Collection - addAll", function() {
+		CollectionSetup();
+		var passed = 0;
+		model.collection.on(Coral.Collection.ADD_EVENT, function(event) {
+			++passed;
+		});
+		model.collection.addAll([3,4]);
+		ok(passed == 2);
+		ok(model.collection.length == 5);
+		ok(model.collection.get(3) === 3);
+		ok(model.collection.get(4) === 4);
+	});
+
+	test("Collection - insert", function() {
+		CollectionSetup();
+		var passed = false;
+		model.collection.on(Coral.Collection.ADD_EVENT, function(event) {
+			passed = event.type == Coral.Collection.ADD_EVENT && event.data.index == 2;
+		});
+		model.collection.insert("test", 2);
+		ok(passed);
+		ok(model.collection.length == 4);
+		ok(model.collection.get(2) === "test");
+	});
+
+	test("Collection - remove", function() {
+		CollectionSetup();
+		var passed = false;
+		model.collection.on(Coral.Collection.REMOVE_EVENT, function(event) {
+			passed = event.type == Coral.Collection.REMOVE_EVENT && event.data.index == 1;
+		});
+		model.collection.remove(1);
+		ok(passed);
+		ok(model.collection.length == 2);
+		ok(model.collection.get(0) === 0);
+		ok(model.collection.get(1) === 2);
+	});
+
+	test("Collection - remove multiple", function() {
+		CollectionSetup();
+		var passed = 0;
+		model.collection.on(Coral.Collection.REMOVE_EVENT, function(event) {
+			++passed;
+		});
+		model.collection.add(1);
+		model.collection.add(1);
+		model.collection.remove(1);
+		ok(passed == 1);
+		ok(model.collection.length == 4);
+		model.collection.remove(1, true);
+		ok(passed == 3);
+		ok(model.collection.length == 2);
+	});
+
+	test("Collection - removeAll", function() {
+		CollectionSetup();
+		var passed = 0;
+		model.collection.on(Coral.Collection.REMOVE_EVENT, function(event) {
+			++passed;
+		});
+		model.collection.removeAll([1,2]);
+		ok(passed == 2);
+		ok(model.collection.length == 1);
+		ok(model.collection.get(0) === 0);
+	});
+
+	test("Collection - move", function() {
+		CollectionSetup();
+		var passed = false;
+		model.collection.on(Coral.Collection.MOVE_EVENT, function(event) {
+			passed = event.type === Coral.Collection.MOVE_EVENT && event.data.from == 0 && event.data.to == 2;
+		});
+		model.collection.move(0, 2);
+		ok(passed);
+		ok(model.collection.length == 3);
+		ok(model.collection.get(0) === 1);
+		ok(model.collection.get(1) === 2);
+		ok(model.collection.get(2) === 0);
+	});
+
+	test("Collection - swap", function() {
+		CollectionSetup();
+		var passed = 0;
+		model.collection.on(Coral.Collection.SET_EVENT, function(event) {
+			++passed;
+		});
+		model.collection.swap(0, 2);
+		ok(passed == 2);
+		ok(model.collection.length == 3);
+		ok(model.collection.get(0) === 2);
+		ok(model.collection.get(1) === 1);
+		ok(model.collection.get(2) === 0);
+	});
+	
+
+	/****** Updatable ******/
+	
+	test("Updatable - base", function() {
+		ok(Coral.AsynchronousUpdater instanceof Object);
+		ok(Coral.AsynchronousUpdater.UpdatableMixin instanceof Object);
+	});
+	
+	asyncTest("Updatable - update", 1, function() {
+		var updatable = {update: function() {
+		    ok(true);
+		    start();
+		}};
+		Meta.Mixin(updatable, Coral.AsynchronousUpdater.UpdatableMixin);
+		Coral.AsynchronousUpdater.planUpdate(updatable);
+	});
+
+	/****** Descriptor ******/
+
+	test("Descriptor - instanciate with shortcut", function () {
+	    var context = {};
+	    var owner = {};
+	    var item = {};
+	    var instance = $DescribableObject().instanciate(context, owner, item);
+	    ok(instance);
+	    ok(instance.context === context);
+	    ok(instance.owner === owner);
+	    ok(instance.item === item);
+	});
+
+	test("Descriptor - instanciate with Descriptor", function () {
+	    var context = {};
+	    var owner = {};
+	    var item = {};
+	    var instance = new Coral.Descriptor(Coral.DescribableObject).instanciate(context, owner, item);
+	    ok(instance);
+	    ok(instance.context === context);
+	    ok(instance.owner === owner);
+	    ok(instance.item === item);
+	});
+
+	test("Descriptor - instanciateAll", function () {
+	    var context = {};
+	    var owner = {};
+	    var instances = Coral.Descriptor.instanciateAll([$DescribableObject(), $DescribableObject(), $DescribableObject()], context, owner, 1, 2);
+	    ok(Array.isArray(instances));
+	    ok(instances.length == 2);
+	});
+
+	/****** DescribableObject ******/
+	
+	test("DescribableObject - base", function() {
+		ok(Coral.DescribableObject instanceof Function);
+		ok(Meta.Mixin.is(Coral.DescribableObject.prototype, Coral.AsynchronousUpdater.UpdatableMixin));
+	});
+
+	test("DescribableObject - basic", function() {
+		var d = new Coral.DescribableObject();
+		ok(d);
+		ok(d.uid);
+		ok(d.owner === undefined);
+		ok(d.context === window);
+		ok(d instanceof Coral.DescribableObject);
+		ok(d instanceof Coral.EventDispatcher);
+		var context = {};
+		var owner = {};
+		var item = {};
+		d = new Coral.DescribableObject($DescribableObject(), context, owner, item);
+		ok(d.owner === owner);
+		ok(d.context === context);
+		ok(d.item === item);
+	});
+	
+	test("DescribableObject - external description", function() {
+		var passed1 = false;
+		var passed2 = 0;
+		var d = new Coral.DescribableObject($DescribableObject({
+			val: 1,
+		    fireEvent: "handleFire",
+            valWatcher: "valChange"
+		}), {
+			handleFire: function(event) {
+				passed1 = event.type === "fire";
+			},
+			valChange: function(newValue, oldValue) {
+				++passed2;
+			}
+		});
+		ok(d.val === 1);
+		d.val = 2;
+		d.dispatch(new Coral.Event("fire"));
+		ok(d.val === 2);
+		ok(passed1);
+		ok(passed2 == 2);
+	});
+	
+	test("DescribableObject - inner description", function() {
+		var passed1 = false;
+		var passed2 = 0;
+		var Class1 = Meta.Class({
+		    description: $DescribableObject({
+		        val: 1,
+			    fireEvent: "handleFire",
+	            valWatcher: "valChange"
+		    }),
+			handleFire: function(event) {
+				passed1 = event.type === "fire";
+			},
+			valChange: function(newValue, oldValue) {
+				++passed2;
+			}
+		}, Coral.DescribableObject);
+		var d = new Class1();
+		ok(d.val === 1);
+		d.val = 2;
+		d.dispatch(new Coral.Event("fire"));
+		ok(d.val === 2);
+		ok(passed1);
+		ok(passed2 == 2);
+	});
+	
+	test("DescribableObject - complexe descriptions", function() {
+		var passed1 = false;
+		var passed2 = 0;
+		var passed3 = false;
+		var passed4 = 0;
+		var context = {
+			handleFire: function(event) {
+				passed1 = event.type === "fire";
+			},
+			valChange: function(newValue, oldValue) {
+				++passed2;
+			},
+			value: 1,
+			nested: {
+				attribute: "test",
+			},
+			method: function() {
+				return this.value + 1;
+			}
+		};
+		Meta.Bindable(context, "method", ["value"]);
+		var Class1 = Meta.Class({
+		    description: $DescribableObject({
+		        val: 1,
+		        chain: $Bind("context.nested.attribute"),
+		    	fireEvent: "handleFire",
+            	valWatcher: "valChange"
+		    }),
+			handleFire: function(event) {
+				passed3 = event.type === "fire";
+			},
+			valChange: function(newValue, oldValue) {
+				++passed4;
+			}
+		}, Coral.DescribableObject);
+	    var d = new Class1($DescribableObject({
+			composite: $Bind("result = {nested.attribute}"),
+			compute: $Bind("{method()}"),
+		    fireEvent: "handleFire",
+            valWatcher: "valChange"
+	    }), context);
+		ok(d.val === 1);
+		ok(d.compute == 2);
+		ok(d.composite == "result = test");
+		ok(d.chain == "test");
+		d.val = 2;
+		context.value = 2;
+		d.dispatch(new Coral.Event("fire"));
+		context.nested = {
+			attribute: "changed",	
+		}
+		ok(d.val === 2);
+		ok(passed1);
+		ok(passed2 == 2);
+		ok(passed3);
+		ok(passed4 == 2);
+		ok(d.compute == 3);
+		ok(d.composite == "result = changed");
+		ok(d.chain == "changed");
+	});
+	
+	test("DescribableObject - destroy", function() {
+		var context = {
+			nested: {
+				attribute: "test"
+			},
+		};
+		var d = new Coral.DescribableObject($DescribableObject({
+			val: $Bind("{nested.attribute}"),
+		}), context);
+		d.destroy();
+		ok(d.val === "test");
+		context.nested.attribute = 2;
+		ok(d.val === "test");
+	});
+	
+	/****** Task ******/
+	
+	test("Task - base", function() {
+		ok(Coral.Task instanceof Function);
+	});
+	
+	test("Task - init", function() {
+		var task = new Coral.Task();
+		ok(task);
+		ok(task instanceof Coral.Task);
+		ok(task instanceof Coral.DescribableObject);
+	});
+	
+	test("Task - run", function() {
+		var passed1 = false;
+		var passed2 = false;
+		var task = new Coral.Task();
+		task.on(Coral.Task.RUN_EVENT, function(event) {
+			passed1 = event.type === Coral.Task.RUN_EVENT;
+		}, this);
+		task.on(Coral.Task.DONE_EVENT, function(event) {
+			passed2 = event.type === Coral.Task.DONE_EVENT;
+		}, this);
+		task.run();
+		ok(passed1);
+		ok(!passed2);
+		ok(task.running);
+		ok(!task.canceled);
+		task.done();
+		ok(passed2);
+		ok(!task.running);
+		ok(!task.canceled);
+	});
+	
+	test("Task - cancel", function() {
+		var passed1 = false;
+		var passed2 = false;
+		var task = new Coral.Task();
+		task.on(Coral.Task.RUN_EVENT, function(event) {
+			passed1 = event.type === Coral.Task.RUN_EVENT;
+		}, this);
+		task.on(Coral.Task.CANCEL_EVENT, function(event) {
+			passed2 = event.type === Coral.Task.CANCEL_EVENT;
+		}, this);
+		task.run();
+		ok(passed1);
+		ok(!passed2);
+		ok(task.running);
+		ok(!task.canceled);
+		task.cancel();
+		ok(passed2);
+		ok(!task.running);
+		ok(task.canceled);
+	});
+	
+	/*** SequentialTasks ***/
+	
+	test("Task - SequentialTasks - base", function() {
+		ok(Coral.SequentialTasks instanceof Function);
+	});
+
+	test("Task - SequentialTasks - run", function() {
+		var passed = 0;
+		var Task1 = Meta.Class({
+			run: function() {
+				Coral.Task.prototype.run.call(this);
+				++passed;
+				this.done();
+			}
+		}, Coral.Task);
+		var st = new Coral.SequentialTasks($SequentialTasks({
+		    tasks: [new Coral.Descriptor(Task1), new Coral.Descriptor(Task1)]
+		}));
+		st.run();
+		ok(passed == 2);
+	});
+	
+	test("Task - SequentialTasks - sub task cancel", function() {
+		var passed = 0;
+		var Task1 = Meta.Class({
+			run: function() {
+				Coral.Task.prototype.run.call(this);
+				++passed;
+				this.cancel();
+			}
+		}, Coral.Task);
+		var st = new Coral.SequentialTasks($SequentialTasks({
+		    tasks: [new Coral.Descriptor(Task1), new Coral.Descriptor(Task1)]
+		}));
+		st.run();
+		ok(passed == 1);
+		ok(!st.running);
+		ok(st.canceled);
+	});
+	
+	test("Task - SequentialTasks - non-critical sub task cancel", function() {
+		var passed = 0;
+		var Task1 = Meta.Class({
+			run: function() {
+				Coral.Task.prototype.run.call(this);
+				++passed;
+				this.cancel();
+			},
+			critical: false
+		}, Coral.Task);
+		var st = new Coral.SequentialTasks($SequentialTasks({
+		    tasks: [new Coral.Descriptor(Task1), new Coral.Descriptor(Task1)]
+		}));
+		st.run();
+		ok(passed == 2);
+		ok(!st.running);
+		ok(!st.canceled);
+	});
+
+	test("Task - SequentialTasks - cancel", function() {
+	    var st = new Coral.SequentialTasks($SequentialTasks({
+	        tasks: [$Task(), $Task()]
+	    }));
+		ok(!st.running);
+		ok(!st.canceled);
+		st.run();
+		ok(st.running);
+		ok(!st.canceled);
+		st.cancel();
+		ok(!st.running);
+		ok(st.canceled);
+	});
+	
+	test("Task - SequentialTasks - empty", function() {
+		var st = new Coral.SequentialTasks();
+		st.run();
+		ok(!st.running);
+		ok(!st.canceled);
+	});
+
+	/*** ParallelTasks ***/
+	
+	test("Task - ParallelTasks - base", function() {
+		ok(Coral.ParallelTasks instanceof Function);
+	});
+	
+	test("Task - ParallelTasks - run", function() {
+		var passed = 0;
+		var Task1 = Meta.Class({
+			run: function() {
+				Coral.Task.prototype.run.call(this);
+				++passed;
+				this.done();
+			}
+		}, Coral.Task);
+		var pt = new Coral.ParallelTasks($ParallelTasks({
+		    tasks: [new Coral.Descriptor(Task1), new Coral.Descriptor(Task1)]
+		}));
+		pt.run();
+		ok(passed == 2);
+	});
+	
+	test("Task - ParallelTasks - sub task cancel", function() {
+		var passed = 0;
+		var Task1 = Meta.Class({
+			run: function() {
+				Coral.Task.prototype.run.call(this);
+				++passed;
+				this.cancel();
+			}
+		}, Coral.Task);
+		var pt = new Coral.ParallelTasks($ParallelTasks({
+		    tasks: [new Coral.Descriptor(Task1), new Coral.Descriptor(Task1)]
+		}));
+		pt.run();
+		ok(passed == 1);
+		ok(!pt.running);
+		ok(pt.canceled);
+	});
+	
+	test("Task - ParallelTasks - non-critical sub task cancel", function() {
+		var passed = 0;
+		var Task1 = Meta.Class({
+			run: function() {
+				Coral.Task.prototype.run.call(this);
+				++passed;
+				this.cancel();
+			},
+			critical: false
+		}, Coral.Task);
+		var pt = new Coral.ParallelTasks($ParallelTasks({
+		    tasks: [new Coral.Descriptor(Task1), new Coral.Descriptor(Task1)]
+		}));
+		pt.run();
+		ok(passed == 2);
+		ok(!pt.running);
+		ok(!pt.canceled);
+	});
+
+	test("Task - ParallelTasks - cancel", function() {
+	    var pt = new Coral.ParallelTasks($ParallelTasks({
+	        tasks: [$Task(), $Task()]
+	    }));
+		ok(!pt.running);
+		ok(!pt.canceled);
+		pt.run();
+		ok(pt.running);
+		ok(!pt.canceled);
+		pt.cancel();
+		ok(!pt.running);
+		ok(pt.canceled);
+	});
+	
+	test("Task - ParallelTasks - empty", function() {
+		var pt = new Coral.ParallelTasks();
+		pt.run();
+		ok(!pt.running);
+		ok(!pt.canceled);
+	});
+	
+	/****** DescriptorsFactory ******/
+	
+	test("Factory - DescriptorsFactory - base", function() {
+		ok(Coral.DescriptorsFactory instanceof Function);
+	});
+	
+	test("Factory - DescriptorsFactory - basic", function() {
+		var context = {
+			value: true
+		};
+		var factory = new Coral.DescriptorsFactory($DescriptorsFactory(), context, context);
+		factory.descriptors = $DescribableObject({
+			val: $Bind("{value}")
+		});
+		factory.collection = new Coral.Collection();
+		factory.update();
+		ok(factory.collection.length == 1);
+		ok(factory.collection.get(0) instanceof Coral.DescribableObject);
+		ok(factory.collection.get(0).val === true);
+	});
+	
+	test("Factory - DescriptorsFactory - complexe", function() {
+		var context = {
+				value: true
+			};
+			var factory = new Coral.DescriptorsFactory($DescriptorsFactory({
+				from: 1,
+				to: 500
+			}), context, context);
+			factory.descriptors = [
+                $DescribableObject({
+				    val: $Bind("{value}")
+                }),
+                $DescribableObject({
+				    val: $Bind("value is {value}")
+                }),
+                $DescribableObject({
+				    type: Coral.DescribableObject,
+			})];
+			factory.collection = new Coral.Collection();
+			factory.update();
+			ok(factory.collection.length == 2);
+			ok(factory.collection.get(0) instanceof Coral.DescribableObject);
+			ok(factory.collection.get(0).val === "value is true");
+			ok(factory.collection.get(1) instanceof Coral.DescribableObject);
+			ok(factory.collection.get(1).val === undefined);
+			factory.from = 0;
+			factory.update();
+			ok(factory.collection.length == 3);
+			ok(factory.collection.get(0) instanceof Coral.DescribableObject);
+			ok(factory.collection.get(0).val === true);
+	});
+	
+	/****** DataDescriptorsFactory ******/
+	
+	test("Factory - DataDescriptorsFactory - base", function() {
+		ok(Coral.DataDescriptorsFactory instanceof Function);
+	});
+	
+	test("Factory - DataDescriptorsFactory - basic", function() {
+		var context = {
+			value: true
+		};
+		var factory = new Coral.DataDescriptorsFactory($DataDescriptorsFactory(), context, context);
+		factory.itemDescriptor = $DescribableObject({
+			val: $Bind("{value}")
+		});
+		factory.items = new Coral.Collection([1,2,3]);
+		factory.collection = new Coral.Collection();
+		factory.update();
+		ok(factory.collection.length == 3);
+		ok(factory.collection.get(0) instanceof Coral.DescribableObject);
+		ok(factory.collection.get(0).val === true);
+		ok(factory.collection.get(0).item === 1);
+		ok(factory.collection.get(1).item === 2);
+		ok(factory.collection.get(2).item === 3);
+		factory.items.add(4);
+		ok(factory.collection.length == 4);
+		factory.items.remove(1);
+		ok(factory.collection.length == 3);
+		ok(factory.collection.get(0).item === 2);
+	});
+	
+	</script>
+</body>
+</html>

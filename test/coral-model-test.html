@@ -1,0 +1,213 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+<script type="text/javascript" src="../build/coral.js"></script>
+<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.12.0.css">
+<link rel="stylesheet" href="qunit-1.10.0.css">
+</head>
+<body>
+	<div id="test-zone" style="display:none;">
+	</div>
+	<div id="qunit"></div>
+	<div id="qunit-fixture"></div>
+    
+	<script type="text/javascript" src="http://code.jquery.com/qunit/qunit-1.12.0.js"></script>
+	<script type="text/javascript">
+	function dieTest(func) {
+		var catched = false;
+		try {
+			func();
+		}
+		catch (e) {
+			catched = true;
+		}
+		ok(catched);
+	};
+	
+	/****** Datas ******/
+	var model;
+	
+    /****** General ******/
+
+	test("Coral - initialisation", function() {
+	    ok(Coral);
+	});
+
+	/****** Meta - Model ******/
+
+	test("Meta - Model - base", function () {
+	    ok(Meta.Model instanceof Function);
+	    ok(Meta.Model.Store);
+	});
+
+	test("Meta - Model - apply", function () {
+	    var anyObject = {};
+	    Meta.Model(anyObject, "Obj", "id", ["test", "val"]);
+	    ok(anyObject);
+	    ok(anyObject.hasOwnProperty("id"));
+	    ok(anyObject.hasOwnProperty("test"));
+	    ok(anyObject.hasOwnProperty("val"));
+	    ok(Meta.Model.getModelName(anyObject) == "Obj");
+	    ok(Meta.Model.getPrimaryKey(anyObject) == "id");
+	    ok(Meta.Model.getKeys(anyObject).length == 2);
+	});
+
+	test("Meta - Model - use", function () {
+	    var anyObject = {};
+	    Meta.Model(anyObject, "Obj", "id", ["test", "val"]);
+	    modelData = Meta.Model.setModelData(anyObject, { id: 1 });
+	    ok(!Meta.Model.isDirty(anyObject))
+        anyObject.test = "try";
+        ok(Meta.Model.isDirty(anyObject));
+        Meta.Model.clean(anyObject);
+        ok(!Meta.Model.isDirty(anyObject));
+	    anyObject.val = 10;
+	    anyObject.other = "";
+	    ok(anyObject.id === 1);
+	    ok(anyObject.test === "try");
+	    ok(anyObject.val === 10);
+	    modelData = Meta.Model.getModelData(anyObject);
+	    ok(modelData.id === 1);
+	    ok(modelData.test === "try");
+	    ok(modelData.val === 10);
+	    ok(!("other" in modelData));
+	    modelData = Meta.Model.setModelData(anyObject, {
+	        id: 2,
+	        test: "changed",
+            val: 0
+	    });
+	    ok(!Meta.Model.isDirty(anyObject));
+	    ok(anyObject.id === 2);
+	    ok(anyObject.test === "changed");
+	    ok(anyObject.val === 0);
+	    ok(Meta.Model.getPrimaryValue(anyObject) == anyObject.id);
+	});
+
+	test("Meta - Model - binding", function () {
+	    var passed = false;
+	    var anyObject = {};
+	    Meta.Model(anyObject, "Obj", "id", ["test", "val"]);
+	    var watcher = new Coral.Watcher(anyObject, "test", function (newValue) {
+	        passed = newValue === anyObject.test;
+	    }).bind();
+	    ok(!passed);
+	    Meta.Model.setModelData(anyObject, {
+	        id: 2,
+	        test: "changed",
+	        val: 0
+	    });
+	    ok(passed);
+	    passed = false;
+	    Meta.Model.setModelData(anyObject, {
+	        id: 2,
+	        test: "changed again",
+	        val: 0
+	    }, true);
+	    ok(!passed);
+	});
+
+	test("Meta - Model - Store - getModel", function () {
+	    var anyObject = { other: "other" };
+	    Meta.Model(anyObject, "Obj", "id", ["test", "val"]);
+	    var model = Meta.Model.Store.getModel(anyObject, {
+	        id: 1,
+	        test: "try",
+	        val: 0
+	    });
+	    ok(Object.getPrototypeOf(model) === anyObject);
+
+	    var model2 = Meta.Model.Store.getModel(anyObject, {
+	        id: 1,
+	        test: "other",
+	        val: 10
+	    });
+	    ok(model === model2);
+	    Meta.Model.Store.clear("Obj");
+	    model2 = Meta.Model.Store.getModel(anyObject, {
+	        id: 1,
+	        test: "other",
+	        val: 10
+	    });
+	    ok(model !== model2);
+	});
+
+	test("Meta - Model - Store - getModels", function () {
+	    var anyObject = { other: "other" };
+	    Meta.Model(anyObject, "Obj", "id", ["test", "val"]);
+	    var model = Meta.Model.Store.getModels(anyObject, [{
+	        id: 1,
+	        test: "try",
+	        val: 0
+	    }, {
+	        id: 2,
+	        test: "",
+	        val: 1
+	    }]);
+	    ok(Array.isArray(model));
+	    ok(model.length == 2);
+	});
+
+	test("Meta - Model - Store - registerModel", function () {
+	    var MyModel = function() {
+	    };
+	    Meta.Model(MyModel.prototype, "Obj", "id", ["test", "val"]);
+	    var model = new MyModel();
+	    Meta.Model.setModelData(model, {
+	        id: 1,
+	        test: "try",
+	        val: 0
+	    });
+	    Meta.Model.Store.registerModel(model);
+	    var model2 = Meta.Model.Store.getModel(MyModel, {
+	        id: 1,
+	        test: "other",
+	        val: 10
+	    });
+	    ok(model === model2);
+	});
+
+	test("Meta - Model - Store - modelByKey", function () {
+	    var MyModel = function () {
+	    };
+	    Meta.Model(MyModel.prototype, "Obj", "id", ["test", "val"]);
+	    var model = Meta.Model.Store.getModel(MyModel, {
+	        id: 1,
+	        test: "try",
+	        val: 0
+	    });
+	    var model2 = Meta.Model.Store.getModel(MyModel, {
+	        id: 2,
+	        test: "",
+	        val: 10
+	    });
+	    ok(Meta.Model.Store.modelByKey(MyModel, 1) === model);
+	    ok(Meta.Model.Store.modelByKey(MyModel, 2) === model2);
+	});
+
+	test("Meta - Model - Store - clear all", function () {
+	    var MyModel1 = function () {
+	    };
+	    var MyModel2 = function () {
+	    };
+	    var MyModel3 = function () {
+	    };
+	    Meta.Model(MyModel1.prototype, "Obj1", "id", ["test", "val"]);
+	    Meta.Model(MyModel2.prototype, "Obj2", "id", ["test", "val"]);
+	    Meta.Model(MyModel3.prototype, "Obj3", "id", ["test", "val"]);
+	    var model1 = Meta.Model.Store.getModel(MyModel1, { id: 1 });
+	    var model2 = Meta.Model.Store.getModel(MyModel2, { id: 1 });
+	    var model3 = Meta.Model.Store.getModel(MyModel3, { id: 1 });
+	    ok(Meta.Model.Store.modelByKey(MyModel1, 1) === model1);
+	    ok(Meta.Model.Store.modelByKey(MyModel2, 1) === model2);
+	    ok(Meta.Model.Store.modelByKey(MyModel3, 1) === model3);
+	    Meta.Model.Store.clear();
+	    ok(Meta.Model.Store.modelByKey(MyModel1, 1) === undefined);
+	    ok(Meta.Model.Store.modelByKey(MyModel2, 1) === undefined);
+	    ok(Meta.Model.Store.modelByKey(MyModel3, 1) === undefined);
+	});
+
+
+
+	</script>
+</body>
+</html>

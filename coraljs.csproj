@@ -1,0 +1,477 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <ProjectGuid>{7F9EE000-4DF2-4AA3-A42C-FF8B5F00E338}</ProjectGuid>
+    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <OutputPath>bin</OutputPath>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <UseIISExpress>true</UseIISExpress>
+    <IISExpressSSLPort />
+    <IISExpressAnonymousAuthentication />
+    <IISExpressWindowsAuthentication />
+    <IISExpressUseClassicPipelineMode />
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>coraljs</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>True</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>10645</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>http://localhost:10448/</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>False</UseCustomServer>
+          <CustomServerUrl>
+          </CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <TypeScriptTarget>ES3</TypeScriptTarget>
+    <TypeScriptIncludeComments>true</TypeScriptIncludeComments>
+    <TypeScriptSourceMap>true</TypeScriptSourceMap>
+    <TypeScriptModuleKind>AMD</TypeScriptModuleKind>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <TypeScriptTarget>ES3</TypeScriptTarget>
+    <TypeScriptIncludeComments>false</TypeScriptIncludeComments>
+    <TypeScriptSourceMap>false</TypeScriptSourceMap>
+    <TypeScriptModuleKind>AMD</TypeScriptModuleKind>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="Gruntfile.js" />
+    <Content Include="README.md" />
+    <Content Include="src\controller\ActionMap.js">
+      <DependentUpon>ActionMap.ts</DependentUpon>
+    </Content>
+    <Content Include="src\controller\ActionMap.min.js">
+      <DependentUpon>ActionMap.ts</DependentUpon>
+    </Content>
+    <Content Include="src\controller\ActionMap.ts" />
+    <Content Include="src\controller\MethodTask.js">
+      <DependentUpon>MethodTask.ts</DependentUpon>
+    </Content>
+    <Content Include="src\controller\MethodTask.min.js">
+      <DependentUpon>MethodTask.ts</DependentUpon>
+    </Content>
+    <Content Include="src\controller\MethodTask.ts" />
+    <Content Include="src\controller\NavigationMap.js">
+      <DependentUpon>NavigationMap.ts</DependentUpon>
+    </Content>
+    <Content Include="src\controller\NavigationMap.min.js">
+      <DependentUpon>NavigationMap.ts</DependentUpon>
+    </Content>
+    <Content Include="src\controller\NavigationMap.ts" />
+    <Content Include="src\controller\SetTask.js">
+      <DependentUpon>SetTask.ts</DependentUpon>
+    </Content>
+    <Content Include="src\controller\SetTask.min.js">
+      <DependentUpon>SetTask.ts</DependentUpon>
+    </Content>
+    <Content Include="src\controller\SetTask.ts" />
+    <Content Include="src\Coral.js">
+      <DependentUpon>Coral.ts</DependentUpon>
+    </Content>
+    <Content Include="src\Coral.min.js">
+      <DependentUpon>Coral.ts</DependentUpon>
+    </Content>
+    <Content Include="src\Coral.ts" />
+    <Content Include="src\foundation\AsynchronousUpdater.js">
+      <DependentUpon>AsynchronousUpdater.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\AsynchronousUpdater.min.js">
+      <DependentUpon>AsynchronousUpdater.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\AsynchronousUpdater.ts" />
+    <Content Include="src\foundation\Binding.js">
+      <DependentUpon>Binding.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Binding.min.js">
+      <DependentUpon>Binding.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Binding.ts" />
+    <Content Include="src\foundation\BindingBase.js">
+      <DependentUpon>BindingBase.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\BindingBase.min.js">
+      <DependentUpon>BindingBase.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\BindingBase.ts" />
+    <Content Include="src\foundation\BindingComposition.js">
+      <DependentUpon>BindingComposition.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\BindingComposition.min.js">
+      <DependentUpon>BindingComposition.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\BindingComposition.ts" />
+    <Content Include="src\foundation\Collection.js">
+      <DependentUpon>Collection.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Collection.min.js">
+      <DependentUpon>Collection.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Collection.ts" />
+    <Content Include="src\foundation\CompositeBinding.js">
+      <DependentUpon>CompositeBinding.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\CompositeBinding.min.js">
+      <DependentUpon>CompositeBinding.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\CompositeBinding.ts" />
+    <Content Include="src\foundation\DataDescriptorsFactory.js">
+      <DependentUpon>DataDescriptorsFactory.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\DataDescriptorsFactory.min.js">
+      <DependentUpon>DataDescriptorsFactory.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\DataDescriptorsFactory.ts" />
+    <Content Include="src\foundation\DescribableObject.js">
+      <DependentUpon>DescribableObject.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\DescribableObject.min.js">
+      <DependentUpon>DescribableObject.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\DescribableObject.ts" />
+    <Content Include="src\foundation\Descriptor.js">
+      <DependentUpon>Descriptor.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Descriptor.min.js">
+      <DependentUpon>Descriptor.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Descriptor.ts" />
+    <Content Include="src\foundation\DescriptorsFactory.js">
+      <DependentUpon>DescriptorsFactory.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\DescriptorsFactory.min.js">
+      <DependentUpon>DescriptorsFactory.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\DescriptorsFactory.ts" />
+    <Content Include="src\foundation\EventDispatcher.js">
+      <DependentUpon>EventDispatcher.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\EventDispatcher.min.js">
+      <DependentUpon>EventDispatcher.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\EventDispatcher.ts" />
+    <Content Include="src\foundation\EventWatcher.js">
+      <DependentUpon>EventWatcher.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\EventWatcher.min.js">
+      <DependentUpon>EventWatcher.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\EventWatcher.ts" />
+    <Content Include="src\foundation\Meta.js">
+      <DependentUpon>Meta.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Meta.min.js">
+      <DependentUpon>Meta.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Meta.ts" />
+    <Content Include="src\foundation\MetaUtils.js">
+      <DependentUpon>MetaUtils.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\MetaUtils.min.js">
+      <DependentUpon>MetaUtils.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\MetaUtils.ts" />
+    <Content Include="src\foundation\StateMatching.js">
+      <DependentUpon>StateMatching.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\StateMatching.min.js">
+      <DependentUpon>StateMatching.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\StateMatching.ts" />
+    <Content Include="src\foundation\Task.js">
+      <DependentUpon>Task.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Task.min.js">
+      <DependentUpon>Task.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Task.ts" />
+    <Content Include="src\foundation\UIBinding.js">
+      <DependentUpon>UIBinding.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\UIBinding.min.js">
+      <DependentUpon>UIBinding.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\UIBinding.ts" />
+    <Content Include="src\foundation\Watcher.js">
+      <DependentUpon>Watcher.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Watcher.min.js">
+      <DependentUpon>Watcher.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Watcher.ts" />
+    <Content Include="src\lib\jquery.d.ts" />
+    <Content Include="src\model\Meta.js">
+      <DependentUpon>Meta.ts</DependentUpon>
+    </Content>
+    <Content Include="src\model\Meta.min.js">
+      <DependentUpon>Meta.ts</DependentUpon>
+    </Content>
+    <Content Include="src\model\Meta.ts" />
+    <Content Include="src\ref.d.ts" />
+    <Content Include="src\Shortcut.js">
+      <DependentUpon>Shortcut.ts</DependentUpon>
+    </Content>
+    <Content Include="src\Shortcut.min.js">
+      <DependentUpon>Shortcut.ts</DependentUpon>
+    </Content>
+    <Content Include="src\Shortcut.ts" />
+    <Content Include="src\foundation\Utils.js">
+      <DependentUpon>Utils.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Utils.min.js">
+      <DependentUpon>Utils.ts</DependentUpon>
+    </Content>
+    <Content Include="src\foundation\Utils.ts" />
+    <Content Include="src\view\Application.js">
+      <DependentUpon>Application.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\Application.min.js">
+      <DependentUpon>Application.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\Application.ts" />
+    <Content Include="src\view\BaseContainer.js">
+      <DependentUpon>BaseContainer.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\BaseContainer.min.js">
+      <DependentUpon>BaseContainer.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\BaseContainer.ts" />
+    <Content Include="src\view\Component.js">
+      <DependentUpon>Component.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\Component.min.js">
+      <DependentUpon>Component.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\Component.ts" />
+    <Content Include="src\view\Container.js">
+      <DependentUpon>Container.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\Container.min.js">
+      <DependentUpon>Container.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\Container.ts" />
+    <Content Include="src\view\DataContainer.js">
+      <DependentUpon>DataContainer.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\DataContainer.min.js">
+      <DependentUpon>DataContainer.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\DataContainer.ts" />
+    <Content Include="src\view\Layout.js">
+      <DependentUpon>Layout.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\Layout.min.js">
+      <DependentUpon>Layout.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\Layout.ts" />
+    <Content Include="src\view\Meta.js">
+      <DependentUpon>Meta.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\Meta.min.js">
+      <DependentUpon>Meta.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\Meta.ts" />
+    <Content Include="src\view\State.js">
+      <DependentUpon>State.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\State.min.js">
+      <DependentUpon>State.ts</DependentUpon>
+    </Content>
+    <Content Include="src\view\State.ts" />
+    <Content Include="test\coral-controller-test.html" />
+    <Content Include="test\coral-foundation-test.html" />
+    <Content Include="test\coral-model-test.html" />
+    <Content Include="test\coral-view-test.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\Shortcut.js.map">
+      <DependentUpon>Shortcut.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\AsynchronousUpdater.js.map">
+      <DependentUpon>AsynchronousUpdater.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\Binding.js.map">
+      <DependentUpon>Binding.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\BindingBase.js.map">
+      <DependentUpon>BindingBase.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\BindingComposition.js.map">
+      <DependentUpon>BindingComposition.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\Collection.js.map">
+      <DependentUpon>Collection.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\CompositeBinding.js.map">
+      <DependentUpon>CompositeBinding.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup />
+  <ItemGroup>
+    <Content Include="src\foundation\Descriptor.js.map">
+      <DependentUpon>Descriptor.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\EventDispatcher.js.map">
+      <DependentUpon>EventDispatcher.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\EventWatcher.js.map">
+      <DependentUpon>EventWatcher.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\StateMatching.js.map">
+      <DependentUpon>StateMatching.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\UIBinding.js.map">
+      <DependentUpon>UIBinding.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\Watcher.js.map">
+      <DependentUpon>Watcher.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\Utils.js.map">
+      <DependentUpon>Utils.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\DescribableObject.js.map">
+      <DependentUpon>DescribableObject.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\Task.js.map">
+      <DependentUpon>Task.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\DescriptorsFactory.js.map">
+      <DependentUpon>DescriptorsFactory.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\DataDescriptorsFactory.js.map">
+      <DependentUpon>DataDescriptorsFactory.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\controller\ActionMap.js.map">
+      <DependentUpon>ActionMap.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\controller\NavigationMap.js.map">
+      <DependentUpon>NavigationMap.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\controller\MethodTask.js.map">
+      <DependentUpon>MethodTask.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\controller\SetTask.js.map">
+      <DependentUpon>SetTask.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\model\Meta.js.map">
+      <DependentUpon>Meta.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\Meta.js.map">
+      <DependentUpon>Meta.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\foundation\MetaUtils.js.map">
+      <DependentUpon>MetaUtils.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\view\Meta.js.map">
+      <DependentUpon>Meta.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\view\Component.js.map">
+      <DependentUpon>Component.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\view\State.js.map">
+      <DependentUpon>State.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\view\Layout.js.map">
+      <DependentUpon>Layout.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\view\BaseContainer.js.map">
+      <DependentUpon>BaseContainer.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\view\Container.js.map">
+      <DependentUpon>Container.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\view\DataContainer.js.map">
+      <DependentUpon>DataContainer.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\view\Application.js.map">
+      <DependentUpon>Application.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="src\Coral.js.map">
+      <DependentUpon>Coral.ts</DependentUpon>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(VSToolsPath)\TypeScript\Microsoft.TypeScript.targets" />
+</Project>

@@ -1,0 +1,294 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+<script type="text/javascript" src="../build/coral.js"></script>
+<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.12.0.css">
+<link rel="stylesheet" href="qunit-1.10.0.css">
+</head>
+<body>
+	<div id="test-zone" style="display:none;">
+	</div>
+	<div id="qunit"></div>
+	<div id="qunit-fixture"></div>
+    
+	<script type="text/javascript" src="http://code.jquery.com/qunit/qunit-1.12.0.js"></script>
+	<script type="text/javascript">
+	function dieTest(func) {
+		var catched = false;
+		try {
+			func();
+		}
+		catch (e) {
+			catched = true;
+		}
+		ok(catched);
+	};
+	
+	/****** Datas ******/
+	var model;
+	
+    /****** General ******/
+
+	test("Coral - initialisation", function() {
+	    ok(Coral);
+	});
+
+	/****** ActionMap ******/
+
+	test("ActionMap - base", function () {
+	    ok(Coral.ActionMap instanceof Function);
+	    ok($ActionMap instanceof Function);
+	    ok($ActionMap() instanceof Coral.Descriptor);
+        ok($ActionMap().type === Coral.ActionMap);
+	    ok(Coral.Action instanceof Function);
+	    ok($Action instanceof Function);
+	    ok($Action() instanceof Coral.Descriptor);
+	    ok($Action().type === Coral.Action);
+	});
+
+	test("ActionMap - empty", function () {
+	    var context = new Coral.EventDispatcher();
+	    var actionMap = new Coral.ActionMap($ActionMap(), context, context);
+	    ok(actionMap);
+	    ok(actionMap instanceof Coral.ActionMap);
+	});
+
+	test("ActionMap - Action - basic", function () {
+	    var passed = false;
+	    var context = new Coral.EventDispatcher();
+	    context.handle = function () {
+	        passed = true;
+	    };
+	    var actionMap = new Coral.ActionMap($ActionMap({
+	        actions: [
+                $Action({
+                    event: "fire",
+                    doneEvent: "handle"
+                })
+	        ]
+	    }), context, context);
+	    ok(actionMap);
+	    ok(actionMap instanceof Coral.ActionMap);
+	    ok(actionMap.actions);
+	    ok(actionMap.actions.length == 1);
+	    ok(actionMap.actions[0] instanceof Coral.Action);
+	    context.dispatch(new Coral.Event("fire"));
+	    ok(passed);
+	});
+
+	test("ActionMap - Action - complexe", function () {
+	    var passed = 0;
+	    var context = new Coral.EventDispatcher();
+	    context.handle = function () {
+	        ++passed;
+	    };
+	    var actionMap = new Coral.ActionMap($ActionMap({
+	        actions: [
+                $Action({
+                    event: "fire",
+                    tasks: [
+                        $Task(),
+                        $Task()
+                    ],
+                    doneEvent: "handle"
+                }),
+                $Action({
+                    event: "fire2",
+                    doneEvent: "handle"
+                }),
+                $Action({
+                    event: "fire2",
+                    doneEvent: "handle"
+                }),
+	        ]
+	    }), context, context);
+	    ok(actionMap.actions);
+	    ok(actionMap.actions.length == 3);
+	    ok(actionMap.actions[0] instanceof Coral.Action);
+	    ok(actionMap.actions[1] instanceof Coral.Action);
+	    ok(actionMap.actions[2] instanceof Coral.Action);
+	    ok(passed == 0);
+	    context.dispatch(new Coral.Event("fire"));
+	    ok(passed == 0);
+	    actionMap.actions[0].tasks[0].done();
+	    actionMap.actions[0].tasks[1].done();
+	    ok(passed == 1);
+	    context.dispatch(new Coral.Event("fire2"));
+	    ok(passed == 3);
+	});
+
+    /****** NavigationMap ******/
+
+
+	test("NavigationMap - base", function () {
+	    ok(Coral.NavigationMap instanceof Function);
+	    ok($NavigationMap instanceof Function);
+	    ok($NavigationMap() instanceof Coral.Descriptor);
+	    ok($NavigationMap().type === Coral.NavigationMap);
+	    ok(Coral.NavigationAction instanceof Function);
+	    ok($NavigationAction instanceof Function);
+	    ok($NavigationAction() instanceof Coral.Descriptor);
+	    ok($NavigationAction().type === Coral.NavigationAction);
+	});
+
+	test("NavigationMap - singleton", function () {
+	    var navigationMap = new Coral.NavigationMap($NavigationMap({
+	        mode: Coral.NavigationMap.NONE_MODE
+	    }));
+	    ok(navigationMap);
+	    ok(navigationMap.mode === Coral.NavigationMap.NONE_MODE);
+	    ok(Coral.NavigationMap.instance === navigationMap);
+	    ok(new Coral.NavigationMap() === navigationMap);
+	    navigationMap.destroy();
+	    ok(Coral.NavigationMap.instance === undefined);
+	});
+
+	test("NavigationMap - basic", function () {
+	    var passed = 0;
+	    var context = new Coral.EventDispatcher();
+	    context.handle = function () {
+	        ++passed;
+	    };
+	    var navigationMap = $NavigationMap({
+	        mode: Coral.NavigationMap.NONE_MODE,
+	        actions: [
+                $NavigationAction({
+                    path: "test/",
+                    doneEvent: "handle"
+                })
+	        ]
+	    }).instanciate(context, context);
+	    ok(navigationMap);
+	    ok(navigationMap.mode === Coral.NavigationMap.NONE_MODE);
+	    ok(navigationMap.actions);
+	    ok(navigationMap.actions.length == 1);
+	    ok(navigationMap.actions[0] instanceof Coral.NavigationAction);
+	    ok(passed == 0);
+	    navigationMap.start("/root//", false, "root/test");
+	    ok(passed == 1);
+	    navigationMap.destroy();
+	});
+
+	test("NavigationMap - complexe", function () {
+	    var passed = 0;
+	    var context = new Coral.EventDispatcher();
+	    context.handle = function () {
+	        ++passed;
+	    };
+	    var navigationMap = $NavigationMap({
+	        mode: Coral.NavigationMap.NONE_MODE,
+	        actions: [
+                $NavigationAction({
+                    path: "test/",
+                    doneEvent: "handle"
+                }),
+                $NavigationAction({
+                    id: "pageNavigationAction",
+                    path: "test/page-{num}/view",
+                    doneEvent: "handle"
+                })
+	        ]
+	    }).instanciate(context, context);
+	    ok(navigationMap);
+	    ok(navigationMap.mode === Coral.NavigationMap.NONE_MODE);
+	    ok(navigationMap.actions);
+	    ok(navigationMap.actions.length == 2);
+	    ok(navigationMap.actions[0] instanceof Coral.NavigationAction);
+	    ok(navigationMap.actions[1] instanceof Coral.NavigationAction);
+	    ok(passed == 0);
+	    navigationMap.start("/root//", false, "root/test");
+	    ok(passed == 1);
+	    navigationMap.navigate("///test/page-3/view");
+	    ok(passed == 2);
+	    ok(context.pageNavigationAction.params.num == 3);
+	    navigationMap.navigate("fail-test");
+	    ok(passed == 2);
+	    navigationMap.destroy();
+	});
+
+	/****** MethodTask ******/
+
+	test("MethodTask - base", function () {
+	    ok(Coral.MethodTask instanceof Function);
+	    ok($MethodTask instanceof Function);
+	    ok($MethodTask() instanceof Coral.Descriptor);
+	    ok($MethodTask().type === Coral.MethodTask);
+	});
+
+	test("MethodTask - basic", function () {
+	    var passed;
+	    var context = {
+	        val: 2,
+	        obj: {
+	            m: function (val) {
+	                passed = val + 1;
+	            }
+	        }
+	    }
+	    var task = $MethodTask({
+	        target: $Bind("obj"),
+	        method: "m",
+	        params: $Bind("val")
+	    }).instanciate(context, context);
+	    ok(task);
+	    ok(task instanceof Coral.MethodTask);
+	    task.run();
+	    ok(!task.isRunning);
+	    ok(passed === 3);
+	});
+
+	test("MethodTask - apply", function () {
+	    var passed;
+	    var context = {
+	        val: [2, 4],
+	        obj: {
+	            m: function (a, b) {
+	                passed = a + b;
+	            }
+	        }
+	    }
+	    var task = $MethodTask({
+	        target: $Bind("obj"),
+	        method: "m",
+	        params: $Bind("val"),
+            apply: true
+	    }).instanciate(context, context);
+	    ok(task);
+	    ok(task instanceof Coral.MethodTask);
+	    task.run();
+	    ok(!task.isRunning);
+	    ok(passed === 6);
+	});
+
+	/****** SetTask ******/
+
+	test("SetTask - base", function () {
+	    ok(Coral.SetTask instanceof Function);
+	    ok($SetTask instanceof Function);
+	    ok($SetTask() instanceof Coral.Descriptor);
+	    ok($SetTask().type === Coral.SetTask);
+	});
+
+	test("SetTask - basic", function () {
+	    var context = {
+	        val: 2,
+	        obj: {
+                value: 0
+	        }
+	    }
+	    var task = $SetTask({
+	        target: $Bind("obj"),
+	        property: "value",
+	        value: $Bind("val")
+	    }).instanciate(context, context);
+	    ok(task);
+	    ok(task instanceof Coral.SetTask);
+	    ok(context.obj.value == 0)
+	    task.run();
+	    ok(!task.isRunning);
+	    ok(context.obj.value == 2);
+	});
+
+	</script>
+</body>
+</html>
