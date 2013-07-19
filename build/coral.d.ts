@@ -973,7 +973,7 @@ declare module Coral {
 * @param {string} chain The chain or composition that represent the binding
 * @returns {Coral.Bind}
 */
-declare function $Bind(chain: string): Coral.Bind;
+declare function $Bind(chain: string): any;
 /**
 * Shortcut to quickly create a {@linkcode Coral.BindState} object.
 * @method $BindState
@@ -983,7 +983,7 @@ declare function $Bind(chain: string): Coral.Bind;
 */
 declare function $BindState(values: {
     _?: string;
-}): Coral.BindState;
+}): any;
 /**
 * Shortcut to quickly create a {@linkcode Coral.Descriptor} object
 * @method $Descriptor

@@ -160,7 +160,7 @@ module Coral {
  * @param {string} chain The chain or composition that represent the binding
  * @returns {Coral.Bind}
  */
-function $Bind(chain: string): Coral.Bind {
+function $Bind(chain: string): any {
     if (Coral.Bind.simpleBindingExp.test(chain))
         return new Coral.Bind(chain.substring(1, chain.length - 1), Coral.Bind.SIMPLE_BINDING_MODE);
     else if (Coral.Bind.compositeBindingExp.test(chain))
@@ -176,7 +176,7 @@ function $Bind(chain: string): Coral.Bind {
  * @param {Object} values Map containing state expressions and associated values. <code>_</code> is a special key for the default value.
  * @returns {Coral.BindState}
  */
-function $BindState(values: { _?: string; }): Coral.BindState {
+function $BindState(values: { _?: string; }): any {
     return new Coral.BindState(values);
 }
 
