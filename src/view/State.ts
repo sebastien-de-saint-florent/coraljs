@@ -5,8 +5,10 @@ module Coral {
         static CHANGE_EVENT = "change";
 
         name: string;
-        values: StateValue[];
-        transitions: Transition[];
+        values: Descriptor<StateValue>[];
+        _values: StateValue[];
+        transitions: Descriptor<Transition>[];
+        _transitions: Transition[];
         css: string;
 
         /**
@@ -30,14 +32,14 @@ module Coral {
             if (!this.name)
                 this.name = "state";
             if (this.values) {
-                this.values = Descriptor.instanciateAll(this.values, this.isExternal("values") ? this.context : this, this);
+                this._values = Descriptor.instanciateAll(this.values, this.isExternal("values") ? this.context : this, this);
                 this._valuesMap = {};
-                for (var i = 0; i < this.values.length; ++i) {
-                    this._valuesMap[this.values[i].value] = this.values[i];
+                for (var i = 0; i < this._values.length; ++i) {
+                    this._valuesMap[this._values[i].value] = this._values[i];
                 }
             }
             if (this.transitions)
-                this.transitions = Descriptor.instanciateAll(this.transitions, this.isExternal("transitions") ? this.context : this, this);
+                this._transitions = Descriptor.instanciateAll(this.transitions, this.isExternal("transitions") ? this.context : this, this);
             this.css = this.name + "-none";
             this._last = "none";
             Coral.Utils.callback(this.updateState, this);
@@ -87,10 +89,10 @@ module Coral {
             if (newValue === oldValue)
                 return;
             var matchingTransition;
-            if (this.transitions)
-                for (var i = 0; i < this.transitions.length; ++i)
-                    if (this.transitions[i].match(oldValue, newValue)) {
-                        matchingTransition = this.transitions[i];
+            if (this._transitions)
+                for (var i = 0; i < this._transitions.length; ++i)
+                    if (this._transitions[i].match(oldValue, newValue)) {
+                        matchingTransition = this._transitions[i];
                         break;
                     }
             if (matchingTransition) {
@@ -193,10 +195,12 @@ module Coral {
     
         destroy() {
             super.destroy();
-            for (var i = 0; i < this.values.length; ++i)
-                this.values[i].destroy();
-            for (i = 0; i < this.transitions.length; ++i)
-                this.transitions[i].destroy();
+            if (this._values)
+                for (var i = 0; i < this._values.length; ++i)
+                    this._values[i].destroy();
+            if (this._transitions)
+                for (i = 0; i < this._transitions.length; ++i)
+                    this._transitions[i].destroy();
         }
     }
     export interface IStateDescriptor extends IDescribableObjectDescriptor {
@@ -389,8 +393,7 @@ module Coral {
          * @method run
          * @memberof Coral.IntermediateState#
          */
-        run() {
-            super.run();
+        do() {
             var transition = this.owner;
             while (transition && !(transition instanceof Transition))
                 transition = transition.owner;

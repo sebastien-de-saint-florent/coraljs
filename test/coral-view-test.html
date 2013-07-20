@@ -199,26 +199,26 @@
 	    var component = new TestComponent($Component({
 	        stateChangeEvent: "handleStateChange"
 	    }), context, context);
-	    ok(component.states);
-	    ok(component.states instanceof Array);
-	    ok(component.states.length == 1);
-	    ok(component.states[0] instanceof Coral.State);
-	    ok(component.states[0].name == "state");
-	    ok(component.states[0].values);
-	    ok(component.states[0].values instanceof Array);
-	    ok(component.states[0].values.length == 2);
-	    ok(component.states[0].values[0] instanceof Coral.StateValue);
-	    ok(component.states[0].values[1] instanceof Coral.StateValue);
-	    ok(component.states[0].values[0].value == "state1");
-	    ok(component.states[0].values[1].value == "state2");
+	    ok(component._states);
+	    ok(component._states instanceof Array);
+	    ok(component._states.length == 1);
+	    ok(component._states[0] instanceof Coral.State);
+	    ok(component._states[0].name == "state");
+	    ok(component._states[0]._values);
+	    ok(component._states[0]._values instanceof Array);
+	    ok(component._states[0]._values.length == 2);
+	    ok(component._states[0]._values[0] instanceof Coral.StateValue);
+	    ok(component._states[0]._values[1] instanceof Coral.StateValue);
+	    ok(component._states[0]._values[0].value == "state1");
+	    ok(component._states[0]._values[1].value == "state2");
 
 	    ok(component.state == "state1");
 	    setTimeout(function() {
-		    ok(component.states[0].getCurrentState() == "state1");
+		    ok(component._states[0].getCurrentState() == "state1");
 		    ok(passed == 1);
 		    ok(component.$el.hasClass("state-state1"));
 		    component.state = "state2";
-		    ok(component.states[0].getCurrentState() == "state2");
+		    ok(component._states[0].getCurrentState() == "state2");
 		    ok(passed == 2);
 		    ok(component.$el.hasClass("state-state2") && !component.$el.hasClass("state-state1"));
             start();

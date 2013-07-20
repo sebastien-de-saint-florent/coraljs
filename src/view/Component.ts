@@ -72,8 +72,10 @@ module Coral {
         position: string;
         flex;
         opacity: number;
-        defs: Coral.DescribableObject[];
-        states: Coral.DescribableObject[];
+        defs: Descriptor<Coral.DescribableObject>[];
+        _defs: Coral.DescribableObject[];
+        states: Descriptor<Coral.DescribableObject>[];
+        _states: Coral.DescribableObject[];
         isAddedToDisplay: boolean;
         parent: Coral.Component;
         $container: JQuery;
@@ -128,14 +130,14 @@ module Coral {
             // initialize and analyze states
             if (this.states && !this.isExternal("states")) {
                 this._statesMap = {};
-                this.states = Descriptor.instanciateAll(Coral.Utils.prototypalMerge(this, "states"), this, this);
-                for (var i = 0; i < this.states.length; ++i)
-                    this._registerState(this.states[i]);
+                this._states = Descriptor.instanciateAll(Coral.Utils.prototypalMerge(this, "states"), this, this);
+                for (var i = 0; i < this._states.length; ++i)
+                    this._registerState(this._states[i]);
             }
         
             // initialize descriptor from defs
             if (this.defs && !this.isExternal("defs"))
-                this.defs = Descriptor.instanciateAll(Coral.Utils.prototypalMerge(this, "defs"), this, this);
+                this._defs = Descriptor.instanciateAll(Coral.Utils.prototypalMerge(this, "defs"), this, this);
 
             // build the skin to render content
             this.buildSkin();
@@ -263,9 +265,9 @@ module Coral {
             // apply explicit styles on current element
             Meta.StyleProperty.applyExplicitStyles(this);
             // add classes corresponding to current states
-            if (this.states)
-                for (var i = 0; i < this.states.length; ++i) {
-                    var state = this.states[i];
+            if (this._states)
+                for (var i = 0; i < this._states.length; ++i) {
+                    var state = this._states[i];
                     new Coral.ClassBinding(state, "css", this.$el).bind();
                 }
             this.render();
@@ -453,9 +455,9 @@ module Coral {
         destroy() {
             super.destroy();
             this.context[this.id] = undefined;
-            if (this.states)
-                for (var i = 0; i < this.states.length; ++i)
-                    this.states[i].destroy();
+            if (this._states)
+                for (var i = 0; i < this._states.length; ++i)
+                    this._states[i].destroy();
             this.clearDirectives();
             if (this._attachedComponents)
                 for (var i = 0; i < this._attachedComponents.length; ++i) {
@@ -475,9 +477,9 @@ module Coral {
         applyDomEvent(domEvent) {
             var key = domEvent.namespace ? domEvent.type + "." + domEvent.namespace : domEvent.type;
             if (domEvent.node)
-                $(domEvent.node).on(key, domEvent.handler);
+                $(domEvent.node).on(key, undefined, { component: this }, domEvent.handler);
             else
-                this.$el.on(key, domEvent.handler);
+                this.$el.on(key, undefined, { component: this }, domEvent.handler);
         }
 
         unapplyDomEvent(domEvent) {

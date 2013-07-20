@@ -81,6 +81,7 @@ module Coral {
         events;
         watchers;
         constructor(type: string, description: IDescriptor);
+        constructor(type: Function, description: IDescriptor);
         /**
          * Descriptor is some kind of generic Factory. It allows you to describe how to create an object.
          * The described class must be parented to {@linkcode Coral.DescribableObject}.
@@ -190,4 +191,16 @@ function $BindState(values: { _?: string; }): any {
  */
 function $Descriptor<T extends Coral.DescribableObject>(type, description: Coral.IDescriptor): Coral.Descriptor<T> {
     return new Coral.Descriptor(type, description)
+}
+
+/**
+ * Shortcut to quickly create a {@linkcode Coral.Descriptor} object without type information
+ * @method $Descriptor
+ * @see Coral.Descriptor
+ * @param type The class described by this descriptor
+ * @param description Attributes, Events and Watchers description
+ * @returns {Coral.Descriptor}
+ */
+function $Description(type, description: Coral.IDescriptor): Coral.Descriptor<any> {
+    return new Coral.Descriptor(undefined, description)
 }
