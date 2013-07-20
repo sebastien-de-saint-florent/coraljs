@@ -938,6 +938,7 @@ declare module Coral {
         public events;
         public watchers;
         constructor(type: string, description: IDescriptor);
+        constructor(type: Function, description: IDescriptor);
         /**
         * Static method that create an Array of instances with <code>descriptors</code>
         * @method instanciateAll
@@ -993,6 +994,15 @@ declare function $BindState(values: {
 * @returns {Coral.Descriptor}
 */
 declare function $Descriptor<T extends Coral.DescribableObject>(type, description: Coral.IDescriptor): Coral.Descriptor<T>;
+/**
+* Shortcut to quickly create a {@linkcode Coral.Descriptor} object without type information
+* @method $Descriptor
+* @see Coral.Descriptor
+* @param type The class described by this descriptor
+* @param description Attributes, Events and Watchers description
+* @returns {Coral.Descriptor}
+*/
+declare function $Description(type, description: Coral.IDescriptor): Coral.Descriptor<any>;
 declare module Coral {
     class DescribableObject extends Coral.EventDispatcher {
         public id: string;
@@ -1134,6 +1144,12 @@ declare module Coral {
         */
         public run(): void;
         /**
+        * Task stuff. Shall be override in child classes or configured dynamically.
+        * @method do
+        * @memberof Coral.Task#
+        */
+        public do(): void;
+        /**
         * Cancel the task if it is running
         * If the task is canceled, a "cancel" event is dispatched
         * @method cancel
@@ -1148,6 +1164,7 @@ declare module Coral {
         public done(): void;
     }
     interface ITaskDescriptor extends Coral.IDescribableObjectDescriptor {
+        do?: () => any;
         critical?: boolean;
         cancelEvent?;
         runEvent?;
@@ -1157,7 +1174,8 @@ declare module Coral {
         criticalWatcher?;
     }
     class SequentialTasks extends Task {
-        public tasks: Task[];
+        public tasks: Coral.Descriptor<Task>[];
+        public _tasks: Task[];
         /**
         * SequentialTasks is a Task that run nested "tasks" sequentialy
         * @constructor Coral.SequentialTasks
@@ -1174,10 +1192,10 @@ declare module Coral {
         private taskIndex;
         /**
         * Execute all tasks described in tasks property sequentialy
-        * @method run
+        * @method do
         * @memberof Coral.SequentialTasks#
         */
-        public run(): void;
+        public do(): void;
         /**
         * Cancel this task by calling cancel on all runnig sub tasks
         * @method cancel
@@ -1203,7 +1221,8 @@ declare module Coral {
         tasks?: Coral.Descriptor<Task>[];
     }
     class ParallelTasks extends Task {
-        public tasks: Task[];
+        public tasks: Coral.Descriptor<Task>[];
+        public _tasks: Task[];
         /**
         * ParallelTasks is a {@linkcode Coral.Task} that run nested <code>tasks</code> in parallel.
         * @constructor Coral.ParallelTasks
@@ -1219,10 +1238,10 @@ declare module Coral {
         private taskCount;
         /**
         * Execute all tasks described in <code>tasks</code> property in parallel.
-        * @method run
+        * @method do
         * @memberof Coral.ParallelTasks#
         */
-        public run(): void;
+        public do(): void;
         /**
         * Cancel this task by calling cancel on all runnig sub tasks.
         * @method cancel
@@ -1424,7 +1443,8 @@ declare module Coral {
 declare function $DataDescriptorsFactory(description: Coral.IDataDescriptorsFactoryDescriptor): Coral.Descriptor<Coral.DataDescriptorsFactory>;
 declare module Coral {
     class ActionMap extends Coral.DescribableObject {
-        public actions: Action[];
+        public actions: Coral.Descriptor<Action>[];
+        public _actions: Action[];
         /**
         * ActionMap is an {@linkcode Coral.Action} list responding to events dispatched by the owner.<br/>
         * The owner of this object must be an {@linkcode Coral.EventDispatcher}.
@@ -1494,7 +1514,8 @@ declare function $Action(description: Coral.IActionDescriptor): Coral.Descriptor
 declare module Coral {
     class NavigationMap extends Coral.DescribableObject {
         public mode: number;
-        public actions: NavigationAction[];
+        public actions: Coral.Descriptor<NavigationAction>[];
+        public _actions: NavigationAction[];
         public currentPath: string;
         /**
         * <code>NavigationMap</code> listen to history API and trigger childs {@linkcode NavigationAction} when change occurs.<br/>
@@ -1922,8 +1943,10 @@ declare module Coral {
         public position: string;
         public flex;
         public opacity: number;
-        public defs: Coral.DescribableObject[];
-        public states: Coral.DescribableObject[];
+        public defs: Coral.Descriptor<Coral.DescribableObject>[];
+        public _defs: Coral.DescribableObject[];
+        public states: Coral.Descriptor<Coral.DescribableObject>[];
+        public _states: Coral.DescribableObject[];
         public isAddedToDisplay: boolean;
         public parent: Component;
         public $container: JQuery;
@@ -2278,8 +2301,10 @@ declare module Coral {
     class State extends Coral.DescribableObject {
         static CHANGE_EVENT: string;
         public name: string;
-        public values: StateValue[];
-        public transitions: Transition[];
+        public values: Coral.Descriptor<StateValue>[];
+        public _values: StateValue[];
+        public transitions: Coral.Descriptor<Transition>[];
+        public _transitions: Transition[];
         public css: string;
         /**
         * State class must be used with {@linkcode Coral.Component} to provide state dependencies.<br/>
@@ -2497,7 +2522,7 @@ declare module Coral {
         * @method run
         * @memberof Coral.IntermediateState#
         */
-        public run(): void;
+        public do(): void;
     }
     interface IIntermediateStateDescriptor extends Coral.ITaskDescriptor {
         time?: number;

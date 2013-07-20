@@ -1826,6 +1826,18 @@ function $BindState(values) {
 function $Descriptor(type, description) {
     return new Coral.Descriptor(type, description);
 }
+
+/**
+* Shortcut to quickly create a {@linkcode Coral.Descriptor} object without type information
+* @method $Descriptor
+* @see Coral.Descriptor
+* @param type The class described by this descriptor
+* @param description Attributes, Events and Watchers description
+* @returns {Coral.Descriptor}
+*/
+function $Description(type, description) {
+    return new Coral.Descriptor(undefined, description);
+}
 ///<reference path="../ref.d.ts"/>
 var Coral;
 (function (Coral) {
@@ -2104,6 +2116,15 @@ var Coral;
             this.dispatch(new Coral.Event(Task.RUN_EVENT));
             this.canceled = false;
             this.running = true;
+            this.do();
+        };
+
+        /**
+        * Task stuff. Shall be override in child classes or configured dynamically.
+        * @method do
+        * @memberof Coral.Task#
+        */
+        Task.prototype.do = function () {
         };
 
         /**
@@ -2159,13 +2180,12 @@ var Coral;
         }
         /**
         * Execute all tasks described in tasks property sequentialy
-        * @method run
+        * @method do
         * @memberof Coral.SequentialTasks#
         */
-        SequentialTasks.prototype.run = function () {
-            _super.prototype.run.call(this);
+        SequentialTasks.prototype.do = function () {
             if (!this.tasksInitialized && this.tasks) {
-                this.tasks = Coral.Descriptor.instanciateAll((this.tasks), this.isExternal("tasks") ? this.context : this, this);
+                this._tasks = Coral.Descriptor.instanciateAll(this.tasks, this.isExternal("tasks") ? this.context : this, this);
                 this.tasksInitialized = true;
             }
             this.taskIndex = -1;
@@ -2178,14 +2198,14 @@ var Coral;
         * @memberof Coral.SequentialTasks#
         */
         SequentialTasks.prototype.cancel = function () {
+            _super.prototype.cancel.call(this);
             if (this.running) {
-                if (this.tasks && this.taskIndex < this.tasks.length) {
-                    this.tasks[this.taskIndex].off([Task.DONE_EVENT, this.uid]);
-                    this.tasks[this.taskIndex].off([Task.CANCEL_EVENT, this.uid]);
-                    this.tasks[this.taskIndex].cancel();
+                if (this._tasks && this.taskIndex < this._tasks.length) {
+                    this._tasks[this.taskIndex].off([Task.DONE_EVENT, this.uid]);
+                    this._tasks[this.taskIndex].off([Task.CANCEL_EVENT, this.uid]);
+                    this._tasks[this.taskIndex].cancel();
                 }
             }
-            _super.prototype.cancel.call(this);
         };
 
         /**
@@ -2202,14 +2222,14 @@ var Coral;
         */
         SequentialTasks.prototype.runNext = function () {
             if (this.taskIndex >= 0) {
-                this.tasks[this.taskIndex].off([Task.DONE_EVENT, this.uid]);
-                this.tasks[this.taskIndex].off([Task.CANCEL_EVENT, this.uid]);
+                this._tasks[this.taskIndex].off([Task.DONE_EVENT, this.uid]);
+                this._tasks[this.taskIndex].off([Task.CANCEL_EVENT, this.uid]);
             }
             if (!this.canceled) {
                 ++this.taskIndex;
-                if (!this.tasks || this.tasks.length <= this.taskIndex)
+                if (!this._tasks || this._tasks.length <= this.taskIndex)
                     this.done(); else {
-                    var task = this.tasks[this.taskIndex];
+                    var task = this._tasks[this.taskIndex];
                     task.on([Task.DONE_EVENT, this.uid], this.runNext, this);
                     task.on([Task.CANCEL_EVENT, this.uid], this.subTaskCanceled, this);
                     task.run();
@@ -2224,9 +2244,9 @@ var Coral;
         */
         SequentialTasks.prototype.destroy = function () {
             _super.prototype.destroy.call(this);
-            if (this.tasks)
-                for (var i = 0; i < this.tasks.length; ++i) {
-                    this.tasks[i].destroy();
+            if (this._tasks)
+                for (var i = 0; i < this._tasks.length; ++i) {
+                    this._tasks[i].destroy();
                 }
         };
         return SequentialTasks;
@@ -2250,23 +2270,22 @@ var Coral;
         }
         /**
         * Execute all tasks described in <code>tasks</code> property in parallel.
-        * @method run
+        * @method do
         * @memberof Coral.ParallelTasks#
         */
-        ParallelTasks.prototype.run = function () {
-            _super.prototype.run.call(this);
+        ParallelTasks.prototype.do = function () {
             if (!this.tasksInitialized && this.tasks) {
-                this.tasks = Coral.Descriptor.instanciateAll(this.tasks, this.isExternal("tasks") ? this.context : this, this);
+                this._tasks = Coral.Descriptor.instanciateAll(this.tasks, this.isExternal("tasks") ? this.context : this, this);
                 this.tasksInitialized = true;
             }
-            if (!this.tasks || this.tasks.length == 0)
+            if (!this._tasks || this._tasks.length == 0)
                 this.done(); else {
                 this.taskCount = 0;
-                for (var i = 0; i < this.tasks.length && !this.canceled; ++i) {
-                    var task = this.tasks[i];
+                for (var i = 0; i < this._tasks.length && !this.canceled; ++i) {
+                    var task = this._tasks[i];
                     task.on([Task.DONE_EVENT, this.uid], this.partialDone, this);
                     task.on([Task.CANCEL_EVENT, this.uid], this.subTaskCanceled, this);
-                    this.tasks[i].run();
+                    this._tasks[i].run();
                 }
             }
         };
@@ -2278,11 +2297,11 @@ var Coral;
         */
         ParallelTasks.prototype.cancel = function () {
             _super.prototype.cancel.call(this);
-            if (this.tasks)
-                for (var i = 0; i < this.tasks.length; ++i) {
-                    this.tasks[i].off([Task.DONE_EVENT, this.uid]);
-                    this.tasks[i].off([Task.CANCEL_EVENT, this.uid]);
-                    this.tasks[i].cancel();
+            if (this._tasks)
+                for (var i = 0; i < this._tasks.length; ++i) {
+                    this._tasks[i].off([Task.DONE_EVENT, this.uid]);
+                    this._tasks[i].off([Task.CANCEL_EVENT, this.uid]);
+                    this._tasks[i].cancel();
                 }
         };
 
@@ -2301,10 +2320,10 @@ var Coral;
         ParallelTasks.prototype.partialDone = function () {
             if (!this.canceled) {
                 ++this.taskCount;
-                if (this.taskCount >= this.tasks.length) {
-                    for (var i = 0; i < this.tasks.length; ++i) {
-                        this.tasks[i].off([Task.DONE_EVENT, this.uid]);
-                        this.tasks[i].off([Task.CANCEL_EVENT, this.uid]);
+                if (this.taskCount >= this._tasks.length) {
+                    for (var i = 0; i < this._tasks.length; ++i) {
+                        this._tasks[i].off([Task.DONE_EVENT, this.uid]);
+                        this._tasks[i].off([Task.CANCEL_EVENT, this.uid]);
                     }
                     this.done();
                 }
@@ -2318,9 +2337,9 @@ var Coral;
         */
         ParallelTasks.prototype.destroy = function () {
             _super.prototype.destroy.call(this);
-            if (this.tasks)
-                for (var i = 0; i < this.tasks.length; ++i) {
-                    this.tasks[i].destroy();
+            if (this._tasks)
+                for (var i = 0; i < this._tasks.length; ++i) {
+                    this._tasks[i].destroy();
                 }
         };
         return ParallelTasks;
@@ -2799,7 +2818,7 @@ var Coral;
             if (!(this.owner instanceof Coral.EventDispatcher))
                 Coral.Utils.error("owner of an ActionMap must be an instance of EventDispatcher", this);
             if (this.actions)
-                this.actions = Coral.Descriptor.instanciateAll(this.actions, this.isExternal("actions") ? this.context : this, this);
+                this._actions = Coral.Descriptor.instanciateAll(this.actions, this.isExternal("actions") ? this.context : this, this);
         }
         /**
         * Destroy this instance and all nested {@linkcode Coral.Action}
@@ -2808,9 +2827,9 @@ var Coral;
         */
         ActionMap.prototype.destroy = function () {
             _super.prototype.destroy.call(this);
-            if (this.actions)
-                for (var i = 0; i < this.actions.length; ++i)
-                    this.actions[i].destroy();
+            if (this._actions)
+                for (var i = 0; i < this._actions.length; ++i)
+                    this._actions[i].destroy();
         };
         return ActionMap;
     })(Coral.DescribableObject);
@@ -2909,7 +2928,7 @@ var Coral;
             _super.call(this, description, context, owner);
             NavigationMap.instance = this;
             if (this.actions)
-                this.actions = Coral.Descriptor.instanciateAll(this.actions, this.isExternal("actions") ? this.context : this, this);
+                this._actions = Coral.Descriptor.instanciateAll(this.actions, this.isExternal("actions") ? this.context : this, this);
             if (window && this.mode == NavigationMap.HISTORY_MODE)
                 $(window).on("popstate.NavigationMap", this._handlePopState.bind(this));
             if (history && this.mode == NavigationMap.HISTORY_MODE)
@@ -2982,9 +3001,9 @@ var Coral;
         * @memberof Coral.NavigationMap#
         */
         NavigationMap.prototype.triggerActions = function () {
-            if (this.actions)
-                for (var i = 0; i < this.actions.length; ++i) {
-                    var action = this.actions[i];
+            if (this._actions)
+                for (var i = 0; i < this._actions.length; ++i) {
+                    var action = this._actions[i];
                     action.applyPath(this._subPath);
                 }
         };
@@ -2998,9 +3017,9 @@ var Coral;
             _super.prototype.destroy.call(this);
             if (window)
                 $(window).off("popstate.NavigationMap");
-            if (this.actions)
-                for (var i = 0; i < this.actions.length; ++i)
-                    this.actions[i].destroy();
+            if (this._actions)
+                for (var i = 0; i < this._actions.length; ++i)
+                    this._actions[i].destroy();
             NavigationMap.instance = undefined;
         };
         NavigationMap.instance = undefined;
@@ -3544,13 +3563,13 @@ var Coral;
 
             if (this.states && !this.isExternal("states")) {
                 this._statesMap = {};
-                this.states = Coral.Descriptor.instanciateAll(Coral.Utils.prototypalMerge(this, "states"), this, this);
-                for (var i = 0; i < this.states.length; ++i)
-                    this._registerState(this.states[i]);
+                this._states = Coral.Descriptor.instanciateAll(Coral.Utils.prototypalMerge(this, "states"), this, this);
+                for (var i = 0; i < this._states.length; ++i)
+                    this._registerState(this._states[i]);
             }
 
             if (this.defs && !this.isExternal("defs"))
-                this.defs = Coral.Descriptor.instanciateAll(Coral.Utils.prototypalMerge(this, "defs"), this, this);
+                this._defs = Coral.Descriptor.instanciateAll(Coral.Utils.prototypalMerge(this, "defs"), this, this);
 
             // build the skin to render content
             this.buildSkin();
@@ -3661,9 +3680,9 @@ var Coral;
             // apply explicit styles on current element
             Meta.StyleProperty.applyExplicitStyles(this);
 
-            if (this.states)
-                for (var i = 0; i < this.states.length; ++i) {
-                    var state = this.states[i];
+            if (this._states)
+                for (var i = 0; i < this._states.length; ++i) {
+                    var state = this._states[i];
                     new Coral.ClassBinding(state, "css", this.$el).bind();
                 }
             this.render();
@@ -3849,9 +3868,9 @@ var Coral;
         Component.prototype.destroy = function () {
             _super.prototype.destroy.call(this);
             this.context[this.id] = undefined;
-            if (this.states)
-                for (var i = 0; i < this.states.length; ++i)
-                    this.states[i].destroy();
+            if (this._states)
+                for (var i = 0; i < this._states.length; ++i)
+                    this._states[i].destroy();
             this.clearDirectives();
             if (this._attachedComponents)
                 for (var i = 0; i < this._attachedComponents.length; ++i) {
@@ -3871,8 +3890,8 @@ var Coral;
         Component.prototype.applyDomEvent = function (domEvent) {
             var key = domEvent.namespace ? domEvent.type + "." + domEvent.namespace : domEvent.type;
             if (domEvent.node)
-                $(domEvent.node).on(key, domEvent.handler); else
-                this.$el.on(key, domEvent.handler);
+                $(domEvent.node).on(key, undefined, { component: this }, domEvent.handler); else
+                this.$el.on(key, undefined, { component: this }, domEvent.handler);
         };
 
         Component.prototype.unapplyDomEvent = function (domEvent) {
@@ -4189,14 +4208,14 @@ var Coral;
             if (!this.name)
                 this.name = "state";
             if (this.values) {
-                this.values = Coral.Descriptor.instanciateAll(this.values, this.isExternal("values") ? this.context : this, this);
+                this._values = Coral.Descriptor.instanciateAll(this.values, this.isExternal("values") ? this.context : this, this);
                 this._valuesMap = {};
-                for (var i = 0; i < this.values.length; ++i) {
-                    this._valuesMap[this.values[i].value] = this.values[i];
+                for (var i = 0; i < this._values.length; ++i) {
+                    this._valuesMap[this._values[i].value] = this._values[i];
                 }
             }
             if (this.transitions)
-                this.transitions = Coral.Descriptor.instanciateAll(this.transitions, this.isExternal("transitions") ? this.context : this, this);
+                this._transitions = Coral.Descriptor.instanciateAll(this.transitions, this.isExternal("transitions") ? this.context : this, this);
             this.css = this.name + "-none";
             this._last = "none";
             Coral.Utils.callback(this.updateState, this);
@@ -4243,10 +4262,10 @@ var Coral;
             if (newValue === oldValue)
                 return;
             var matchingTransition;
-            if (this.transitions)
-                for (var i = 0; i < this.transitions.length; ++i)
-                    if (this.transitions[i].match(oldValue, newValue)) {
-                        matchingTransition = this.transitions[i];
+            if (this._transitions)
+                for (var i = 0; i < this._transitions.length; ++i)
+                    if (this._transitions[i].match(oldValue, newValue)) {
+                        matchingTransition = this._transitions[i];
                         break;
                     }
             if (matchingTransition) {
@@ -4343,10 +4362,12 @@ var Coral;
 
         State.prototype.destroy = function () {
             _super.prototype.destroy.call(this);
-            for (var i = 0; i < this.values.length; ++i)
-                this.values[i].destroy();
-            for (i = 0; i < this.transitions.length; ++i)
-                this.transitions[i].destroy();
+            if (this._values)
+                for (var i = 0; i < this._values.length; ++i)
+                    this._values[i].destroy();
+            if (this._transitions)
+                for (i = 0; i < this._transitions.length; ++i)
+                    this._transitions[i].destroy();
         };
         State.CHANGE_EVENT = "change";
         return State;
@@ -4510,8 +4531,7 @@ var Coral;
         * @method run
         * @memberof Coral.IntermediateState#
         */
-        IntermediateState.prototype.run = function () {
-            _super.prototype.run.call(this);
+        IntermediateState.prototype.do = function () {
             var transition = this.owner;
             while (transition && !(transition instanceof Transition))
                 transition = transition.owner;
@@ -4917,4 +4937,4 @@ $(function () {
         app.run();
     }
 });
-//@ sourceMappingURL=file:///C:/Users/seb/Documents/GitHub/coraljs/build/coral.js.map
+//@ sourceMappingURL=file:////Users/seb/coraljs/build/coral.js.map

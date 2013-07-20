@@ -3,7 +3,8 @@ module Coral {
     var normalizeExp = /^[/]*(.*[^/])[/]*$/;
     export class NavigationMap extends Coral.DescribableObject {
         mode: number;
-        actions: NavigationAction[];
+        actions: Descriptor<NavigationAction>[];
+        _actions: NavigationAction[];
         currentPath: string;
         /**
          * <code>NavigationMap</code> listen to history API and trigger childs {@linkcode NavigationAction} when change occurs.<br/>
@@ -26,7 +27,7 @@ module Coral {
             super(description, context, owner);
             NavigationMap.instance = this;
             if (this.actions)
-                this.actions = Coral.Descriptor.instanciateAll(this.actions, this.isExternal("actions") ? this.context : this, this);
+                this._actions = Coral.Descriptor.instanciateAll(this.actions, this.isExternal("actions") ? this.context : this, this);
             if (window && this.mode == NavigationMap.HISTORY_MODE)
                 $(window).on("popstate.NavigationMap", this._handlePopState.bind(this));
             if (history && this.mode == NavigationMap.HISTORY_MODE)
@@ -129,9 +130,9 @@ module Coral {
          * @memberof Coral.NavigationMap#
          */
         triggerActions() {
-            if (this.actions)
-                for (var i = 0; i < this.actions.length; ++i) {
-                    var action = this.actions[i];
+            if (this._actions)
+                for (var i = 0; i < this._actions.length; ++i) {
+                    var action = this._actions[i];
                     action.applyPath(this._subPath);
                 }
         }
@@ -145,9 +146,9 @@ module Coral {
             super.destroy();
             if (window)
                 $(window).off("popstate.NavigationMap");
-            if (this.actions)
-                for (var i = 0; i < this.actions.length; ++i)
-                    this.actions[i].destroy();
+            if (this._actions)
+                for (var i = 0; i < this._actions.length; ++i)
+                    this._actions[i].destroy();
             NavigationMap.instance = undefined;
         }
     }

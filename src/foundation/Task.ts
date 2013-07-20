@@ -55,6 +55,16 @@ module Coral {
             this.dispatch(new Coral.Event(Task.RUN_EVENT));
             this.canceled = false;
             this.running = true;
+            this.do();
+        }
+
+        /**
+         * Task stuff. Shall be override in child classes or configured dynamically.
+         * @method do
+         * @memberof Coral.Task#
+         */
+        do() {
+            // task stuff here
         }
 
         /**
@@ -86,6 +96,7 @@ module Coral {
     Task.prototype.critical = true;
 
     export interface ITaskDescriptor extends IDescribableObjectDescriptor {
+        do?: () => any;
         critical?: bool;
         cancelEvent?;
         runEvent?;
@@ -96,7 +107,8 @@ module Coral {
     }
 
     export class SequentialTasks extends Task {
-        tasks: Coral.Task[];
+        tasks: Descriptor<Task>[];
+        _tasks: Task[];
         /**
          * SequentialTasks is a Task that run nested "tasks" sequentialy
          * @constructor Coral.SequentialTasks
@@ -116,33 +128,32 @@ module Coral {
 
         /**
          * Execute all tasks described in tasks property sequentialy
-         * @method run
+         * @method do
          * @memberof Coral.SequentialTasks#
          */
-        run() {
-            super.run();
+        do() {
             if (!this.tasksInitialized && this.tasks) {
-                this.tasks = Descriptor.instanciateAll(<any>(this.tasks), this.isExternal("tasks") ? this.context : this, this);
+                this._tasks = Descriptor.instanciateAll(this.tasks, this.isExternal("tasks") ? this.context : this, this);
                 this.tasksInitialized = true;
             }
             this.taskIndex = -1;
             this.runNext();
         }
-    
+        
         /**
          * Cancel this task by calling cancel on all runnig sub tasks
          * @method cancel
          * @memberof Coral.SequentialTasks#
          */
         cancel() {
+            super.cancel();
             if (this.running) {
-                if (this.tasks && this.taskIndex < this.tasks.length) {
-                    this.tasks[this.taskIndex].off([Task.DONE_EVENT, this.uid]);
-                    this.tasks[this.taskIndex].off([Task.CANCEL_EVENT, this.uid]);
-                    this.tasks[this.taskIndex].cancel();
+                if (this._tasks && this.taskIndex < this._tasks.length) {
+                    this._tasks[this.taskIndex].off([Task.DONE_EVENT, this.uid]);
+                    this._tasks[this.taskIndex].off([Task.CANCEL_EVENT, this.uid]);
+                    this._tasks[this.taskIndex].cancel();
                 }
             }
-            super.cancel();
         }
     
         /**
@@ -160,15 +171,15 @@ module Coral {
          */
         runNext() {
             if (this.taskIndex >= 0) {
-                this.tasks[this.taskIndex].off([Task.DONE_EVENT, this.uid]);
-                this.tasks[this.taskIndex].off([Task.CANCEL_EVENT, this.uid]);
+                this._tasks[this.taskIndex].off([Task.DONE_EVENT, this.uid]);
+                this._tasks[this.taskIndex].off([Task.CANCEL_EVENT, this.uid]);
             }
             if (!this.canceled) {
                 ++this.taskIndex;
-                if (!this.tasks || this.tasks.length <= this.taskIndex)
+                if (!this._tasks || this._tasks.length <= this.taskIndex)
                     this.done();
                 else {
-                    var task = this.tasks[this.taskIndex];
+                    var task = this._tasks[this.taskIndex];
                     task.on([Task.DONE_EVENT, this.uid], this.runNext, this);
                     task.on([Task.CANCEL_EVENT, this.uid], this.subTaskCanceled, this);
                     task.run();
@@ -183,9 +194,9 @@ module Coral {
          */
         destroy() {
             super.destroy();
-            if (this.tasks)
-                for (var i = 0; i < this.tasks.length; ++i) {
-                    this.tasks[i].destroy();
+            if (this._tasks)
+                for (var i = 0; i < this._tasks.length; ++i) {
+                    this._tasks[i].destroy();
                 }
         }
     }
@@ -195,7 +206,8 @@ module Coral {
     }
 
     export class ParallelTasks extends Task {
-        tasks: Coral.Task[];
+        tasks: Descriptor<Task>[];
+        _tasks: Task[];
         /**
          * ParallelTasks is a {@linkcode Coral.Task} that run nested <code>tasks</code> in parallel.
          * @constructor Coral.ParallelTasks
@@ -214,24 +226,23 @@ module Coral {
 
         /**
          * Execute all tasks described in <code>tasks</code> property in parallel.
-         * @method run
+         * @method do
          * @memberof Coral.ParallelTasks#
          */
-        run() {
-            super.run();
+        do() {
             if (!this.tasksInitialized && this.tasks) {
-                this.tasks = Descriptor.instanciateAll(<any>this.tasks, this.isExternal("tasks") ? this.context : this, this);
+                this._tasks = Descriptor.instanciateAll(this.tasks, this.isExternal("tasks") ? this.context : this, this);
                 this.tasksInitialized = true;
             }
-            if (!this.tasks || this.tasks.length == 0)
+            if (!this._tasks || this._tasks.length == 0)
                 this.done();
             else {
                 this.taskCount = 0;
-                for (var i = 0; i < this.tasks.length && !this.canceled; ++i) {
-                    var task = this.tasks[i];
+                for (var i = 0; i < this._tasks.length && !this.canceled; ++i) {
+                    var task = this._tasks[i];
                     task.on([Task.DONE_EVENT, this.uid], this.partialDone, this);
                     task.on([Task.CANCEL_EVENT, this.uid], this.subTaskCanceled, this);
-                    this.tasks[i].run();
+                    this._tasks[i].run();
                 }
             }
         }
@@ -243,11 +254,11 @@ module Coral {
          */
         cancel() {
             super.cancel();
-            if (this.tasks)
-                for (var i = 0; i < this.tasks.length; ++i) {
-                    this.tasks[i].off([Task.DONE_EVENT, this.uid]);
-                    this.tasks[i].off([Task.CANCEL_EVENT, this.uid]);
-                    this.tasks[i].cancel();
+            if (this._tasks)
+                for (var i = 0; i < this._tasks.length; ++i) {
+                    this._tasks[i].off([Task.DONE_EVENT, this.uid]);
+                    this._tasks[i].off([Task.CANCEL_EVENT, this.uid]);
+                    this._tasks[i].cancel();
                 }
         }
     
@@ -267,10 +278,10 @@ module Coral {
         partialDone() {
             if (!this.canceled) {
                 ++this.taskCount;
-                if (this.taskCount >= this.tasks.length) {
-                    for (var i = 0; i < this.tasks.length; ++i) {
-                        this.tasks[i].off([Task.DONE_EVENT, this.uid]);
-                        this.tasks[i].off([Task.CANCEL_EVENT, this.uid]);
+                if (this.taskCount >= this._tasks.length) {
+                    for (var i = 0; i < this._tasks.length; ++i) {
+                        this._tasks[i].off([Task.DONE_EVENT, this.uid]);
+                        this._tasks[i].off([Task.CANCEL_EVENT, this.uid]);
                     }
                     this.done();
                 }
@@ -284,9 +295,9 @@ module Coral {
          */
         destroy() {
             super.destroy();
-            if (this.tasks)
-                for (var i = 0; i < this.tasks.length; ++i) {
-                    this.tasks[i].destroy();
+            if (this._tasks)
+                for (var i = 0; i < this._tasks.length; ++i) {
+                    this._tasks[i].destroy();
                 }
         }
     }

@@ -1,7 +1,8 @@
 ﻿///<reference path="../ref.d.ts"/>
 module Coral {
     export class ActionMap extends Coral.DescribableObject {
-        actions: Action[];
+        actions: Descriptor<Action>[];
+        _actions: Action[];
         /**
          * ActionMap is an {@linkcode Coral.Action} list responding to events dispatched by the owner.<br/>
          * The owner of this object must be an {@linkcode Coral.EventDispatcher}.
@@ -19,7 +20,7 @@ module Coral {
             if (!(this.owner instanceof Coral.EventDispatcher))
                 Coral.Utils.error("owner of an ActionMap must be an instance of EventDispatcher", this);
             if (this.actions)
-                this.actions = Coral.Descriptor.instanciateAll(this.actions, this.isExternal("actions") ? this.context : this, this);
+                this._actions = Coral.Descriptor.instanciateAll(this.actions, this.isExternal("actions") ? this.context : this, this);
          }
 
         /**
@@ -29,9 +30,9 @@ module Coral {
          */
         destroy() {
             super.destroy();
-            if (this.actions)
-                for (var i = 0; i < this.actions.length; ++i)
-                    this.actions[i].destroy();
+            if (this._actions)
+                for (var i = 0; i < this._actions.length; ++i)
+                    this._actions[i].destroy();
         }
     }
 

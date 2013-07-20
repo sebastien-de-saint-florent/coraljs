@@ -69,9 +69,9 @@
 	    }), context, context);
 	    ok(actionMap);
 	    ok(actionMap instanceof Coral.ActionMap);
-	    ok(actionMap.actions);
-	    ok(actionMap.actions.length == 1);
-	    ok(actionMap.actions[0] instanceof Coral.Action);
+	    ok(actionMap._actions);
+	    ok(actionMap._actions.length == 1);
+	    ok(actionMap._actions[0] instanceof Coral.Action);
 	    context.dispatch(new Coral.Event("fire"));
 	    ok(passed);
 	});
@@ -102,16 +102,16 @@
                 }),
 	        ]
 	    }), context, context);
-	    ok(actionMap.actions);
-	    ok(actionMap.actions.length == 3);
-	    ok(actionMap.actions[0] instanceof Coral.Action);
-	    ok(actionMap.actions[1] instanceof Coral.Action);
-	    ok(actionMap.actions[2] instanceof Coral.Action);
+	    ok(actionMap._actions);
+	    ok(actionMap._actions.length == 3);
+	    ok(actionMap._actions[0] instanceof Coral.Action);
+	    ok(actionMap._actions[1] instanceof Coral.Action);
+	    ok(actionMap._actions[2] instanceof Coral.Action);
 	    ok(passed == 0);
 	    context.dispatch(new Coral.Event("fire"));
 	    ok(passed == 0);
-	    actionMap.actions[0].tasks[0].done();
-	    actionMap.actions[0].tasks[1].done();
+	    actionMap._actions[0]._tasks[0].done();
+	    actionMap._actions[0]._tasks[1].done();
 	    ok(passed == 1);
 	    context.dispatch(new Coral.Event("fire2"));
 	    ok(passed == 3);
@@ -160,9 +160,9 @@
 	    }).instanciate(context, context);
 	    ok(navigationMap);
 	    ok(navigationMap.mode === Coral.NavigationMap.NONE_MODE);
-	    ok(navigationMap.actions);
-	    ok(navigationMap.actions.length == 1);
-	    ok(navigationMap.actions[0] instanceof Coral.NavigationAction);
+	    ok(navigationMap._actions);
+	    ok(navigationMap._actions.length == 1);
+	    ok(navigationMap._actions[0] instanceof Coral.NavigationAction);
 	    ok(passed == 0);
 	    navigationMap.start("/root//", false, "root/test");
 	    ok(passed == 1);
@@ -191,10 +191,10 @@
 	    }).instanciate(context, context);
 	    ok(navigationMap);
 	    ok(navigationMap.mode === Coral.NavigationMap.NONE_MODE);
-	    ok(navigationMap.actions);
-	    ok(navigationMap.actions.length == 2);
-	    ok(navigationMap.actions[0] instanceof Coral.NavigationAction);
-	    ok(navigationMap.actions[1] instanceof Coral.NavigationAction);
+	    ok(navigationMap._actions);
+	    ok(navigationMap._actions.length == 2);
+	    ok(navigationMap._actions[0] instanceof Coral.NavigationAction);
+	    ok(navigationMap._actions[1] instanceof Coral.NavigationAction);
 	    ok(passed == 0);
 	    navigationMap.start("/root//", false, "root/test");
 	    ok(passed == 1);
