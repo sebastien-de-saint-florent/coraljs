@@ -1,0 +1,535 @@
+<html>
+<head>
+<script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+<script type="text/javascript" src="../build/coral.js"></script>
+<link rel="stylesheet" href="http://code.jquery.com/qunit/qunit-1.12.0.css">
+<link rel="stylesheet" href="qunit-1.10.0.css">
+</head>
+<body>
+	<div id="test-zone" style="display:none;">
+	</div>
+	<div id="qunit"></div>
+	<div id="qunit-fixture"></div>
+    
+	<script type="text/javascript" src="http://code.jquery.com/qunit/qunit-1.12.0.js"></script>
+	<script type="text/javascript">
+	function dieTest(func) {
+		var catched = false;
+		try {
+			func();
+		}
+		catch (e) {
+			catched = true;
+		}
+		ok(catched);
+	};
+	
+	/****** Datas ******/
+	var model;
+	
+    /****** General ******/
+
+	test("Coral - initialisation", function() {
+	    ok(Coral);
+	});
+
+    /****** Meta ******/
+
+    /*** StyleProperty ***/
+
+	test("Meta - StyleProperty - apply", function () {
+	    $("#test-zone").html("<div id='test'></div>");
+	    var model = {$el:$("#test")};
+	    Meta.StyleProperty(model, "width", "width");
+	    model.width = 80;
+	    ok(model.width === "80px");
+	    ok($("#test").css("width") === "80px");
+	});
+
+	test("Meta - StyleProperty - applyAll", function () {
+	    $("#test-zone").html("<div id='test'></div>");
+	    var model = { $el: undefined };
+	    Meta.StyleProperty(model, "width", "width");
+	    Meta.StyleProperty(model, "height", "height");
+	    model.width = 80;
+	    model.height = 100;
+	    model.$el = $("#test");
+	    Meta.StyleProperty.applyExplicitStyles(model);
+	    ok(model.width === "80px");
+	    ok($("#test").css("width") === "80px");
+	    ok(model.height === "100px");
+	    ok($("#test").css("height") === "100px");
+	});
+	
+	/****** Component ******/
+
+	test("Component - base", function () {
+	    ok(Coral.Component instanceof Function);
+	});
+
+	test("Component - instanciate", function () {
+	    var component = new Coral.Component();
+	    ok(component);
+	    ok(component instanceof Coral.Component);
+	    ok(component instanceof Coral.DescribableObject);
+	});
+
+	test("Component - workflow events", function () {
+	    var initPassed = false;
+	    var completePassed = false;
+	    var context = {
+	        handleInit: function (event) {
+	            initPassed = true;
+	        },
+	        handleComplete: function (event) {
+	            completePassed = initPassed;
+	        },
+	    };
+	    var component = new Coral.Component($Component({
+	        initEvent: "handleInit",
+	        completeEvent: "handleComplete",
+	    }), context, context);
+	    ok(initPassed);
+	    ok(completePassed);
+	});
+ 
+	test("Component - configure", function () {
+	    var component = new Coral.Component($Component({
+	        width: 100,
+	        color: "red",
+            skin:"<span/>"
+	    }));
+	    ok(component);
+	    ok(component.el instanceof HTMLSpanElement);
+	    ok(component.$el.css("width") == "100px");
+	    ok(component.$el.css("color") !== "red" && component.color == "red");
+	});
+
+	test("Component - skin configuration", function () {
+	    $("#test-zone").html('<span data-style-color="{c}" data-class-open="{isOpen}" data-action-click="handleClick"><div data-attr-width="{val}" data-text="content : {text}"/></span>');
+	    var passed = false;
+	    var component = new Coral.Component($Component({
+	        handleClick: function () {
+	            passed = true;
+	        },
+	        val: 10,
+	        text: "blabla",
+	        c: "red",
+            isOpen: false,
+            skin: $("#test-zone").children()[0],
+	    }));
+	    $("#test-zone").append(component.$el);
+	    component.addedToDisplay();
+	    ok(component.$el.css("color") == "rgb(255, 0, 0)");
+	    ok(!component.$el.hasClass("open"));
+	    ok(!passed);
+	    ok($(component.$el.children()[0]).attr("width") == "10");
+	    ok($(component.$el.children()[0]).text() == "content : blabla");
+	    component.$el.click();
+	    component.val = 20;
+	    component.text = "changed";
+	    component.c = "blue";
+	    component.isOpen = true;
+	    ok(component.$el.css("color") == "rgb(0, 0, 255)");
+	    ok(component.$el.hasClass("open"));
+	    ok(passed);
+	    ok($(component.$el.children()[0]).attr("width") == "20");
+	    ok($(component.$el.children()[0]).text() == "content : changed");
+	});
+
+	test("Component - dom events", function () {
+	    var passed = false;
+	    var context = {
+	        handleClick: function () {
+	            passed = true;
+	        },
+	    };
+	    var component = new Coral.Component($Component({
+            clickEvent: "handleClick"
+	    }), context, context);
+	    $("#test-zone").append(component.$el);
+	    component.addedToDisplay();
+	    component.$el.click();
+	    ok(passed);
+	});
+
+	test("Component - computed events", function () {
+	    var instance;
+	    var MyComputedEventDelegate = Meta.Class({
+	    	constructor: function MyComputedEventDelegate() {
+		        Coral.ComputedEventDelegate.call(this);
+		        instance = this;
+		    }
+	    }, Coral.ComputedEventDelegate);
+	    Coral.Component.computedEvents.computed = MyComputedEventDelegate;
+	    var passed = false;
+	    var context = {
+	        handleComputedEvent: function () {
+	            passed = true;
+	        },
+	    };
+	    var component = new Coral.Component($Component({
+	        computedEvent: "handleComputedEvent"
+	    }), context, context);
+	    ok(instance);
+	    instance.dispatch(new Coral.Event("computed"));
+        ok(passed)
+	});
+
+	asyncTest("Component - State - basic configure", function () {
+		expect(19);
+	    var passed = 0;
+	    var context = {
+	        handleStateChange: function (event) {
+	            ++passed;
+	        }
+	    };
+	    var TestComponent = Meta.Class({
+	    	state: "state1",
+	        states: $State({
+	            name: "state",
+	            value: $Bind("state"),
+	            values: [$StateValue({
+	                value: "state1"
+	            }), $StateValue({
+	                value: "state2"
+	            })]
+	        })
+	    }, Coral.Component);
+	    var component = new TestComponent($Component({
+	        stateChangeEvent: "handleStateChange"
+	    }), context, context);
+	    ok(component._states);
+	    ok(component._states instanceof Array);
+	    ok(component._states.length == 1);
+	    ok(component._states[0] instanceof Coral.State);
+	    ok(component._states[0].name == "state");
+	    ok(component._states[0]._values);
+	    ok(component._states[0]._values instanceof Array);
+	    ok(component._states[0]._values.length == 2);
+	    ok(component._states[0]._values[0] instanceof Coral.StateValue);
+	    ok(component._states[0]._values[1] instanceof Coral.StateValue);
+	    ok(component._states[0]._values[0].value == "state1");
+	    ok(component._states[0]._values[1].value == "state2");
+
+	    ok(component.state == "state1");
+	    setTimeout(function() {
+		    ok(component._states[0].getCurrentState() == "state1");
+		    ok(passed == 1);
+		    ok(component.$el.hasClass("state-state1"));
+		    component.state = "state2";
+		    ok(component._states[0].getCurrentState() == "state2");
+		    ok(passed == 2);
+		    ok(component.$el.hasClass("state-state2") && !component.$el.hasClass("state-state1"));
+            start();
+	    }, 10);
+	});
+
+	asyncTest("Component - State - state dependencies", function () {
+		expect(6);
+	    var passed1 = false;
+	    var passed2 = false;
+	    var passed3 = false;
+	    var passed4 = false;
+	    var context = {
+	    };
+	    var TestComponent = Meta.Class({
+	        states: $State({
+	            name: "state",
+	            value: $Bind("state"),
+	            values: [$StateValue({
+	                value: "state1"
+	            }), $StateValue({
+	                value: "state2"
+	            })]
+	        })
+	    }, Coral.Component);
+	    var component = new TestComponent($Component({
+	        handleFire1: function (event) {
+	            passed1 = true;
+	        },
+	        handleFire2: function (event) {
+	            passed2 = true;
+	        },
+	        handleWatchable1: function (newValue, oldValue) {
+	            passed3 = true;
+	        },
+	        handleWatchable2: function (newValue, oldValue) {
+	            passed4 = true;
+	        },
+	    }), context, context);
+	    var child = new Coral.Component($Component({
+	    	val: $BindState({
+	    		".state1": 1,
+	    		".state2": 2,
+	    	}),
+	    	fireEvent: $BindState({
+	    		".state1": "handleFire1",
+	    		".state2": "handleFire2",
+	    	}),
+	    	watchableWatcher: $BindState({
+	    		".state1": "handleWatchable1",
+	    		".state2": "handleWatchable2",
+	    	})
+	    }), component, component);
+	    setTimeout(function() {
+	    	component.state = "state1";
+		    child.dispatch(new Coral.Event("fire"));
+		    child.watchable = 1;
+		    ok(passed1);
+		    ok(passed3);
+		    ok(child.val == 1);
+		    component.state = "state2";
+		    child.dispatch(new Coral.Event("fire"));
+		    child.watchable = 2;
+		    ok(passed2);
+		    ok(passed4);
+		    ok(child.val == 2);
+	        start();
+	    }, 10);
+	});
+
+    
+	asyncTest("Component - State - state multiple", function () {
+		expect(4);
+	    var TestComponent = Meta.Class({
+	        states: [$State({
+	            name: "state",
+	            value: $Bind("state"),
+	            values: [$StateValue({
+	                value: "state1"
+	            }), $StateValue({
+	                value: "state2"
+	            })]
+	        }), $State({
+	            name: "openState",
+	            value: $Bind("openState"),
+	            values: [$StateValue({
+	                value: "open"
+	            }), $StateValue({
+	                value: "close"
+	            })]
+	        })]
+	    }, Coral.Component);
+	    var context = new TestComponent($Component({
+	    }));
+	    var component = new Coral.Component($Component({
+	    	val: $BindState({
+	    		".state1:openState.open": 1,
+	    		".state2:openState.close": 2,
+	    		".state2:openState.open": 3,
+	    		".state1:openState.close": 4,
+	    	})
+	    }), context, context);
+	    setTimeout(function() {
+		    context.state = "state1";
+		    context.openState = "open";
+		    ok(component.val == 1);
+		    context.state = "state2";
+		    ok(component.val == 3);
+		    context.openState = "close";
+		    ok(component.val == 2);
+		    context.state = "state1";
+		    ok(component.val == 4);
+	        start();
+	    }, 10);
+	});
+
+        
+	asyncTest("Component - State - Transition - basic", function () {
+		expect(1);
+	    var TestComponent = Meta.Class({
+	    	state: "open",
+	        states: [$State({
+	            name: "openState",
+	            value: $Bind("state"),
+	            values: [$StateValue({
+	                value: "open"
+	            }), $StateValue({
+	                value: "close"
+	            })],
+	            transitions: [
+                    $Transition({
+                        from: "open",
+                        to: "close",
+                        transitionEndEvent: "onTransitionEnd"
+                    })
+	            ]
+	        })],
+	        onTransitionEnd: function() {
+	        	ok(true);
+	        	start();
+	        }
+	    }, Coral.Component);
+	    var context = new TestComponent();
+	    setTimeout(function() {
+	    	context.state = "close";
+	    }, 10);
+	});
+
+	asyncTest("Component - State - Transition - none", function () {
+		expect(1);
+	    var TestComponent = Meta.Class({
+	        states: [$State({
+	            name: "openState",
+	            value: "open",
+	            values: [$StateValue({
+	                value: "open"
+	            }), $StateValue({
+	                value: "close"
+	            })],
+	            transitions: [
+                    $Transition({
+                        from: "none",
+                        to: "open",
+                        transitionEndEvent: "onTransitionEnd"
+                    })
+	            ]
+	        })],
+	        onTransitionEnd: function() {
+	        	ok(true);
+	        	start();
+	        }
+	    }, Coral.Component);
+	    var context = new TestComponent();
+	});
+
+	asyncTest("Component - State - Transition - any", function () {
+		expect(1);
+	    var TestComponent = Meta.Class({
+	    	state: "open",
+	        states: [$State({
+	            name: "openState",
+	            value: $Bind("state"),
+	            values: [$StateValue({
+	                value: "open"
+	            }), $StateValue({
+	                value: "close"
+	            })],
+	            transitions: [
+                    $Transition({
+                        from: "close",
+                        to: "any",
+                        transitionEndEvent: "onTransitionEnd"
+                    })
+	            ]
+	        })],
+	        onTransitionEnd: function() {
+	        	ok(true);
+	        	start();
+	        }
+	    }, Coral.Component);
+	    var context = new TestComponent();
+	    setTimeout(function() {
+	    	context.state = "close";
+	    	context.state = "open";
+	    }, 10);
+	});
+
+	/****** Container ******/
+        
+	test("Container - base", function () {
+	    ok(Coral.Container instanceof Function);
+	    var container = new Coral.Container();
+	    ok(container);
+	    ok(container instanceof Coral.Container);
+	    ok(container instanceof Coral.Component);
+	});
+        
+	test("Container - simple childs", function () {
+	    var context = {};
+	    var container = new Coral.Container($Container({
+	        childs: [
+                $Component({
+                    id: "child1"
+                }),
+                $Component({
+                    id: "child2"
+                })
+	        ]
+	    }), context, context);
+	    ok(context.child1 instanceof Coral.Component);
+	    ok(context.child2 instanceof Coral.Component);
+	    ok(context.child2 != context.child1);
+	    ok(container.childsCollection);
+	    ok(container.childsCollection instanceof Coral.Collection);
+	    ok(container.childsCollection.length == 2);
+	    ok(container.$el.children().length == 2);
+	});
+
+	asyncTest("Container - complexe childs", function () {
+		expect(9);
+	    var TestComponent = Meta.Class({
+	    	openState: "open",
+	        states: [$State({
+	            name: "openState",
+	            value: $Bind("openState"),
+	            values: [$StateValue({
+	                value: "open"
+	            }), $StateValue({
+	                value: "close"
+	            })]
+	        })]
+	    }, Coral.Component);
+	    var context = new TestComponent($Component(), context, context);
+	    var container = new Coral.Container($Container({
+	        childs: [
+                $Component({
+                    id: "child1",
+                    includeIn: ".open"
+                }),
+                $Component({
+                    id: "child2",
+                    excludeFrom: ".open"
+                })
+	        ]
+	    }), context, context);
+	    setTimeout(function() {
+		    ok(context.child1 instanceof Coral.Component);
+		    ok(context.child2 === undefined);
+		    ok(container.childsCollection.length == 1);
+		    ok(container.childsCollection.get(0) == context.child1);
+		    ok(container.$el.children().length == 1);
+		    context.openState = "close";
+		    ok(context.child2 instanceof Coral.Component);
+		    ok(container.childsCollection.length == 1);
+		    ok(container.childsCollection.get(0) == context.child2);
+		    ok(container.$el.children().length == 1);
+	        start();
+	    }, 10);
+	});
+
+	/****** DataContainer ******/
+
+	test("DataContainer - base", function () {
+	    ok(Coral.DataContainer instanceof Function);
+	    var container = new Coral.DataContainer();
+	    ok(container);
+	    ok(container instanceof Coral.DataContainer);
+	    ok(container instanceof Coral.BaseContainer);
+	});
+
+	test("DataContainer - simple childs", function () {
+	    var context = {};
+	    var container = new Coral.DataContainer($DataContainer({
+	        itemRenderer: $Component(),
+	        items: new Coral.Collection([1,2,3])
+	    }), context, context);
+	    ok(container.childsCollection);
+	    ok(container.childsCollection instanceof Coral.Collection);
+	    ok(container.childsCollection.length == 3);
+	    ok(container.$el.children().length == 3);
+	    ok(container.childsCollection.get(0).item == 1);
+	    container.items.add(4);
+	    ok(container.childsCollection.length == 4);
+	    ok(container.$el.children().length == 4);
+	    ok(container.childsCollection.get(3).item == 4);
+	    container.items.remove(2);
+	    ok(container.childsCollection.length == 3);
+	    ok(container.$el.children().length == 3);
+	    ok(container.childsCollection.get(2).item == 4);
+	});
+
+	</script>
+</body>
+</html>
