@@ -1,6 +1,6 @@
 coraljs
 =======
 
-An awesome framework for front-end developers :)
+/!\ DEPRECATED /!\
 
-Go to http://coraljs.com to access documentation and examples
+It used to be a pet project to create a new kind of front end framework. The current master is still supposed to work if you want to have a look :D
